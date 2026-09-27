@@ -2471,22 +2471,18 @@ function resolveImportCategory(type, labelText) {
   return id;
 }
 
-// Wires one Export/Import CSV widget to its own set of DOM elements — called
-// once for the Everyday Expenses page's own buttons, and again for the
-// identical widget offered from Settings (see index.html), so the feature
-// doesn't care which page it was triggered from. Each instance gets its own
-// pendingImportEntries closure rather than sharing one module-level
-// variable, so a file picked in one widget can't leak into the other's
-// confirm step.
-function setupExpenseCsvIO(ids) {
-  const exportBtn           = document.getElementById(ids.exportBtn);
-  const importBtn           = document.getElementById(ids.importBtn);
-  const importFile          = document.getElementById(ids.importFile);
-  const importReview        = document.getElementById(ids.importReview);
-  const importSummaryEl     = document.getElementById(ids.importSummary);
-  const importAccountSelect = document.getElementById(ids.importAccount);
-  const importConfirmBtn    = document.getElementById(ids.importConfirm);
-  const importCancelBtn     = document.getElementById(ids.importCancel);
+// Wires the Export/Import CSV widget on the Settings page (see index.html —
+// deliberately only offered there, not on the Everyday Expenses page itself,
+// so backup/restore lives in one place rather than two).
+function setupExpenseCsvIO() {
+  const exportBtn           = document.getElementById('settings-expense-export-btn');
+  const importBtn           = document.getElementById('settings-expense-import-btn');
+  const importFile          = document.getElementById('settings-expense-import-file');
+  const importReview        = document.getElementById('settings-expense-import-review');
+  const importSummaryEl     = document.getElementById('settings-expense-import-summary');
+  const importAccountSelect = document.getElementById('settings-expense-import-account');
+  const importConfirmBtn    = document.getElementById('settings-expense-import-confirm-btn');
+  const importCancelBtn     = document.getElementById('settings-expense-import-cancel-btn');
   enhanceSelect(importAccountSelect);
 
   let pendingImportEntries = null;
@@ -2598,27 +2594,7 @@ function setupExpenseCsvIO(ids) {
   });
 }
 
-setupExpenseCsvIO({
-  exportBtn: 'expense-export-btn',
-  importBtn: 'expense-import-btn',
-  importFile: 'expense-import-file',
-  importReview: 'expense-import-review',
-  importSummary: 'expense-import-summary',
-  importAccount: 'expense-import-account',
-  importConfirm: 'expense-import-confirm-btn',
-  importCancel: 'expense-import-cancel-btn'
-});
-
-setupExpenseCsvIO({
-  exportBtn: 'settings-expense-export-btn',
-  importBtn: 'settings-expense-import-btn',
-  importFile: 'settings-expense-import-file',
-  importReview: 'settings-expense-import-review',
-  importSummary: 'settings-expense-import-summary',
-  importAccount: 'settings-expense-import-account',
-  importConfirm: 'settings-expense-import-confirm-btn',
-  importCancel: 'settings-expense-import-cancel-btn'
-});
+setupExpenseCsvIO();
 
 expensePeriodSelect.addEventListener('change', () => {
   expenseCustomRange.style.display = expensePeriodSelect.value === 'custom' ? '' : 'none';
