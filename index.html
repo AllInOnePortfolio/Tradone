@@ -611,6 +611,28 @@
               </select>
             </label>
           </div>
+
+          <div class="expense-io-section">
+            <h2 data-i18n="expenses.ioHeading">Backup &amp; import</h2>
+            <p class="avanza-note" data-i18n="expenses.ioNote">Download every entry as a CSV file, or bring one in from elsewhere — each imported row can be linked to an account, same as adding one by hand.</p>
+            <div class="expense-io-actions">
+              <button type="button" id="settings-expense-export-btn" class="avanza-btn avanza-btn-secondary" data-i18n="expenses.exportBtn">Export as CSV</button>
+              <button type="button" id="settings-expense-import-btn" class="avanza-btn avanza-btn-secondary" data-i18n="expenses.importBtn">Import from CSV</button>
+              <input type="file" id="settings-expense-import-file" accept=".csv,text/csv" style="display:none" />
+            </div>
+            <div id="settings-expense-import-review" class="expense-import-review" style="display:none">
+              <p id="settings-expense-import-summary"></p>
+              <label>
+                <span data-i18n="expenses.accountLabel">Account (optional)</span>
+                <select id="settings-expense-import-account"></select>
+              </label>
+              <p class="avanza-note" data-i18n="expenses.importAccountNote">If you link an account, every imported row adjusts its balance — the same as adding each one by hand.</p>
+              <div class="expense-import-review-actions">
+                <button type="button" id="settings-expense-import-confirm-btn" class="avanza-btn" data-i18n="expenses.importConfirmBtn">Import</button>
+                <button type="button" id="settings-expense-import-cancel-btn" class="link-btn" data-i18n="common.cancel">Cancel</button>
+              </div>
+            </div>
+          </div>
         </section>
       </section>
 

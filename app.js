@@ -2391,16 +2391,6 @@ expenseForm.addEventListener('submit', (event) => {
 // "Other"), and every imported row can optionally be linked to one account —
 // same effect as adding each one by hand with that account picked.
 
-const expenseExportBtn           = document.getElementById('expense-export-btn');
-const expenseImportBtn           = document.getElementById('expense-import-btn');
-const expenseImportFile          = document.getElementById('expense-import-file');
-const expenseImportReview        = document.getElementById('expense-import-review');
-const expenseImportSummaryEl     = document.getElementById('expense-import-summary');
-const expenseImportAccountSelect = document.getElementById('expense-import-account');
-const expenseImportConfirmBtn    = document.getElementById('expense-import-confirm-btn');
-const expenseImportCancelBtn     = document.getElementById('expense-import-cancel-btn');
-enhanceSelect(expenseImportAccountSelect);
-
 function escapeCsvField(value) {
   const str = String(value ?? '');
   return /[",\n\r]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
@@ -2419,7 +2409,7 @@ function expensesToCsv(entries) {
   return [header, ...rows].map((row) => row.map(escapeCsvField).join(',')).join('\r\n');
 }
 
-expenseExportBtn.addEventListener('click', () => {
+function downloadExpensesCsv() {
   const csv = expensesToCsv(expenses);
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -2430,7 +2420,7 @@ expenseExportBtn.addEventListener('click', () => {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
-});
+}
 
 // Hand-rolled rather than a plain split(',') — a quoted field (the common
 // case for a Description containing its own comma) needs real quote-aware
@@ -2481,115 +2471,153 @@ function resolveImportCategory(type, labelText) {
   return id;
 }
 
-// Rows parsed from the most recently picked file, held here between the
-// summary being shown and the user confirming (or cancelling) the import —
-// mirrors pendingImportEntries's own lifetime: set on file read, cleared on
-// confirm or cancel.
-let pendingImportEntries = null;
+// Wires one Export/Import CSV widget to its own set of DOM elements — called
+// once for the Everyday Expenses page's own buttons, and again for the
+// identical widget offered from Settings (see index.html), so the feature
+// doesn't care which page it was triggered from. Each instance gets its own
+// pendingImportEntries closure rather than sharing one module-level
+// variable, so a file picked in one widget can't leak into the other's
+// confirm step.
+function setupExpenseCsvIO(ids) {
+  const exportBtn           = document.getElementById(ids.exportBtn);
+  const importBtn           = document.getElementById(ids.importBtn);
+  const importFile          = document.getElementById(ids.importFile);
+  const importReview        = document.getElementById(ids.importReview);
+  const importSummaryEl     = document.getElementById(ids.importSummary);
+  const importAccountSelect = document.getElementById(ids.importAccount);
+  const importConfirmBtn    = document.getElementById(ids.importConfirm);
+  const importCancelBtn     = document.getElementById(ids.importCancel);
+  enhanceSelect(importAccountSelect);
 
-// Deliberately a separate small render from renderExpenseAccountOptions
-// above: this one doesn't need to remember/restore a "last used" default,
-// since every import is its own one-off choice.
-function renderImportAccountOptions() {
-  const linkable = accounts.filter((a) => a.type !== 'wallet');
-  expenseImportAccountSelect.innerHTML = [
-    `<option value="" data-i18n="expenses.accountNone">${t('expenses.accountNone')}</option>`,
-    ...linkable.map((a) => `<option value="${a.id}">${a.name || t(`accountType.${a.type}`)} — ${t(`accountType.${a.type}`)}</option>`)
-  ].join('');
-  refreshCustomSelect(expenseImportAccountSelect);
-}
+  let pendingImportEntries = null;
 
-expenseImportBtn.addEventListener('click', () => expenseImportFile.click());
-
-expenseImportFile.addEventListener('change', () => {
-  const file = expenseImportFile.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const rows = parseCsv(String(reader.result));
-      // The first row is treated as a header only if its first cell isn't
-      // itself a date — tolerates a file with or without a header line
-      // instead of requiring one to match exactly.
-      const startIdx = rows.length && /^\d{4}-\d{2}-\d{2}$/.test((rows[0][0] || '').trim()) ? 0 : 1;
-
-      const parsed = [];
-      for (let i = startIdx; i < rows.length; i++) {
-        const [dateRaw, typeRaw, categoryRaw, descriptionRaw, amountRaw] = rows[i];
-        const date = (dateRaw || '').trim();
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
-        const amount = Number(amountRaw);
-        if (!Number.isFinite(amount) || amount <= 0) continue;
-        const type = (typeRaw || '').trim().toLowerCase() === 'earning' ? 'earning' : 'expense';
-        parsed.push({ date, type, categoryRaw: (categoryRaw || '').trim(), description: (descriptionRaw || '').trim(), amount });
-      }
-
-      if (!parsed.length) {
-        alert(t('expenses.importEmpty'));
-        return;
-      }
-
-      pendingImportEntries = parsed;
-      const expenseCount = parsed.filter((p) => p.type === 'expense').length;
-      const earningCount = parsed.length - expenseCount;
-      expenseImportSummaryEl.textContent = t('expenses.importSummary')
-        .replace('{count}', parsed.length)
-        .replace('{expenseCount}', expenseCount)
-        .replace('{earningCount}', earningCount);
-      renderImportAccountOptions();
-      expenseImportReview.style.display = '';
-    } catch {
-      alert(t('expenses.importError'));
-    } finally {
-      expenseImportFile.value = '';
-    }
-  };
-  reader.onerror = () => alert(t('expenses.importError'));
-  reader.readAsText(file);
-});
-
-expenseImportCancelBtn.addEventListener('click', () => {
-  pendingImportEntries = null;
-  expenseImportReview.style.display = 'none';
-});
-
-expenseImportConfirmBtn.addEventListener('click', () => {
-  if (!pendingImportEntries) return;
-  const accountId = expenseImportAccountSelect.value || null;
-  const account = accountId ? accounts.find((a) => a.id === accountId) : null;
-
-  const newEntries = pendingImportEntries.map((p) => ({
-    id: crypto.randomUUID(),
-    type: p.type,
-    category: resolveImportCategory(p.type, p.categoryRaw),
-    description: p.description,
-    amount: p.amount,
-    date: p.date,
-    accountId,
-    createdAt: new Date().toISOString()
-  }));
-
-  expenses = [...newEntries, ...expenses];
-  saveExpenses();
-  saveCustomExpenseCategories();
-
-  if (account) {
-    // One combined balance adjustment rather than one applyAccountBalanceDelta
-    // call per row — same end result, a single account mutation instead of
-    // potentially hundreds for a large import.
-    const netDelta = newEntries.reduce((sum, e) => sum + (e.type === 'earning' ? e.amount : -e.amount), 0);
-    applyAccountBalanceDelta(accountId, netDelta);
+  // Deliberately a separate small render from renderExpenseAccountOptions
+  // above: this one doesn't need to remember/restore a "last used" default,
+  // since every import is its own one-off choice.
+  function renderImportAccountOptions() {
+    const linkable = accounts.filter((a) => a.type !== 'wallet');
+    importAccountSelect.innerHTML = [
+      `<option value="" data-i18n="expenses.accountNone">${t('expenses.accountNone')}</option>`,
+      ...linkable.map((a) => `<option value="${a.id}">${a.name || t(`accountType.${a.type}`)} — ${t(`accountType.${a.type}`)}</option>`)
+    ].join('');
+    refreshCustomSelect(importAccountSelect);
   }
 
-  syncProfileToServer();
-  const importedCount = newEntries.length;
-  pendingImportEntries = null;
-  expenseImportReview.style.display = 'none';
-  renderExpenseCategoryOptions(expenseFormType);
-  renderExpenseAccountOptions();
-  renderExpenses();
-  render();
-  alert(t('expenses.importDone').replace('{count}', importedCount));
+  exportBtn.addEventListener('click', downloadExpensesCsv);
+  importBtn.addEventListener('click', () => importFile.click());
+
+  importFile.addEventListener('change', () => {
+    const file = importFile.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const rows = parseCsv(String(reader.result));
+        // The first row is treated as a header only if its first cell isn't
+        // itself a date — tolerates a file with or without a header line
+        // instead of requiring one to match exactly.
+        const startIdx = rows.length && /^\d{4}-\d{2}-\d{2}$/.test((rows[0][0] || '').trim()) ? 0 : 1;
+
+        const parsed = [];
+        for (let i = startIdx; i < rows.length; i++) {
+          const [dateRaw, typeRaw, categoryRaw, descriptionRaw, amountRaw] = rows[i];
+          const date = (dateRaw || '').trim();
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+          const amount = Number(amountRaw);
+          if (!Number.isFinite(amount) || amount <= 0) continue;
+          const type = (typeRaw || '').trim().toLowerCase() === 'earning' ? 'earning' : 'expense';
+          parsed.push({ date, type, categoryRaw: (categoryRaw || '').trim(), description: (descriptionRaw || '').trim(), amount });
+        }
+
+        if (!parsed.length) {
+          alert(t('expenses.importEmpty'));
+          return;
+        }
+
+        pendingImportEntries = parsed;
+        const expenseCount = parsed.filter((p) => p.type === 'expense').length;
+        const earningCount = parsed.length - expenseCount;
+        importSummaryEl.textContent = t('expenses.importSummary')
+          .replace('{count}', parsed.length)
+          .replace('{expenseCount}', expenseCount)
+          .replace('{earningCount}', earningCount);
+        renderImportAccountOptions();
+        importReview.style.display = '';
+      } catch {
+        alert(t('expenses.importError'));
+      } finally {
+        importFile.value = '';
+      }
+    };
+    reader.onerror = () => alert(t('expenses.importError'));
+    reader.readAsText(file);
+  });
+
+  importCancelBtn.addEventListener('click', () => {
+    pendingImportEntries = null;
+    importReview.style.display = 'none';
+  });
+
+  importConfirmBtn.addEventListener('click', () => {
+    if (!pendingImportEntries) return;
+    const accountId = importAccountSelect.value || null;
+    const account = accountId ? accounts.find((a) => a.id === accountId) : null;
+
+    const newEntries = pendingImportEntries.map((p) => ({
+      id: crypto.randomUUID(),
+      type: p.type,
+      category: resolveImportCategory(p.type, p.categoryRaw),
+      description: p.description,
+      amount: p.amount,
+      date: p.date,
+      accountId,
+      createdAt: new Date().toISOString()
+    }));
+
+    expenses = [...newEntries, ...expenses];
+    saveExpenses();
+    saveCustomExpenseCategories();
+
+    if (account) {
+      // One combined balance adjustment rather than one applyAccountBalanceDelta
+      // call per row — same end result, a single account mutation instead of
+      // potentially hundreds for a large import.
+      const netDelta = newEntries.reduce((sum, e) => sum + (e.type === 'earning' ? e.amount : -e.amount), 0);
+      applyAccountBalanceDelta(accountId, netDelta);
+    }
+
+    syncProfileToServer();
+    const importedCount = newEntries.length;
+    pendingImportEntries = null;
+    importReview.style.display = 'none';
+    renderExpenseCategoryOptions(expenseFormType);
+    renderExpenseAccountOptions();
+    renderExpenses();
+    render();
+    alert(t('expenses.importDone').replace('{count}', importedCount));
+  });
+}
+
+setupExpenseCsvIO({
+  exportBtn: 'expense-export-btn',
+  importBtn: 'expense-import-btn',
+  importFile: 'expense-import-file',
+  importReview: 'expense-import-review',
+  importSummary: 'expense-import-summary',
+  importAccount: 'expense-import-account',
+  importConfirm: 'expense-import-confirm-btn',
+  importCancel: 'expense-import-cancel-btn'
+});
+
+setupExpenseCsvIO({
+  exportBtn: 'settings-expense-export-btn',
+  importBtn: 'settings-expense-import-btn',
+  importFile: 'settings-expense-import-file',
+  importReview: 'settings-expense-import-review',
+  importSummary: 'settings-expense-import-summary',
+  importAccount: 'settings-expense-import-account',
+  importConfirm: 'settings-expense-import-confirm-btn',
+  importCancel: 'settings-expense-import-cancel-btn'
 });
 
 expensePeriodSelect.addEventListener('change', () => {
