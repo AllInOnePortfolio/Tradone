@@ -1768,6 +1768,51 @@ body.dragging-active {
   font-weight: 600;
 }
 
+.expense-io-section {
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.expense-io-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* .avanza-btn-secondary inherits .avanza-btn's display:block/width:100% (see
+   above), which would stack these two full-width instead of side by side. */
+.expense-io-actions .avanza-btn {
+  width: auto;
+  flex: 1;
+  min-width: 140px;
+  text-align: center;
+}
+
+.expense-import-review {
+  margin-top: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.expense-import-review label {
+  display: grid;
+  gap: 6px;
+  color: #e8d5d8;
+  font-size: 0.95rem;
+}
+
+.expense-import-review-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.expense-import-review-actions .avanza-btn {
+  width: auto;
+  flex: 1;
+}
+
 /* Category field's own dropdown popup (see setupExpenseCategorySelect in
    app.js) — a normal .custom-select-menu row plus a swatch and a remove (×)
    button per option, and a trailing "+ Add" row that swaps itself for a

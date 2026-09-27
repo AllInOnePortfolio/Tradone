@@ -254,6 +254,16 @@ const TRANSLATIONS = {
     'expenses.accountNone': 'No linked account',
     'expenses.accountNote': "Linking an account deducts (or adds, for an earning) this amount from its balance and refreshes its daily return estimate.",
     'expenses.addExpenseBtn': 'Add expense',
+    'expenses.ioHeading': 'Backup & import',
+    'expenses.ioNote': "Download every entry as a CSV file, or bring one in from elsewhere — each imported row can be linked to an account, same as adding one by hand.",
+    'expenses.exportBtn': 'Export as CSV',
+    'expenses.importBtn': 'Import from CSV',
+    'expenses.importAccountNote': "If you link an account, every imported row adjusts its balance — the same as adding each one by hand.",
+    'expenses.importConfirmBtn': 'Import',
+    'expenses.importSummary': '{count} entries found — {expenseCount} expenses, {earningCount} earnings.',
+    'expenses.importEmpty': "Couldn't find any valid rows in that file.",
+    'expenses.importError': "Couldn't read that file — make sure it's a CSV exported from here (or in the same format).",
+    'expenses.importDone': '{count} entries imported.',
     'expenses.spendingOverviewHeading': 'Spending overview',
     'expenses.viewList': 'List',
     'expenses.viewWheel': 'Wheel',
@@ -500,6 +510,16 @@ const TRANSLATIONS = {
     'expenses.accountNone': 'Без привязки к счёту',
     'expenses.accountNote': 'Привязка счёта спишет (или начислит, для дохода) эту сумму с его баланса и обновит оценку дневного дохода.',
     'expenses.addExpenseBtn': 'Добавить расход',
+    'expenses.ioHeading': 'Резервная копия и импорт',
+    'expenses.ioNote': 'Скачайте все записи в виде CSV-файла или загрузите файл откуда-то ещё — каждую импортированную строку можно привязать к счёту, как при добавлении вручную.',
+    'expenses.exportBtn': 'Экспорт в CSV',
+    'expenses.importBtn': 'Импорт из CSV',
+    'expenses.importAccountNote': 'Если вы привяжете счёт, каждая импортированная запись изменит его баланс — так же, как при добавлении вручную.',
+    'expenses.importConfirmBtn': 'Импортировать',
+    'expenses.importSummary': 'Найдено записей: {count} — расходов: {expenseCount}, доходов: {earningCount}.',
+    'expenses.importEmpty': 'В этом файле не найдено ни одной подходящей строки.',
+    'expenses.importError': 'Не удалось прочитать файл — убедитесь, что это CSV, экспортированный отсюда (или в том же формате).',
+    'expenses.importDone': 'Импортировано записей: {count}.',
     'expenses.spendingOverviewHeading': 'Обзор расходов',
     'expenses.viewList': 'Список',
     'expenses.viewWheel': 'Круговая',
@@ -745,6 +765,16 @@ const TRANSLATIONS = {
     'expenses.accountNone': '不关联账户',
     'expenses.accountNote': '关联账户会从其余额中扣除（收入则增加）此金额，并刷新其每日收益估算。',
     'expenses.addExpenseBtn': '添加支出',
+    'expenses.ioHeading': '备份与导入',
+    'expenses.ioNote': '将所有记录下载为 CSV 文件，或从其他地方导入 —— 每条导入的记录都可以像手动添加一样关联到一个账户。',
+    'expenses.exportBtn': '导出为 CSV',
+    'expenses.importBtn': '从 CSV 导入',
+    'expenses.importAccountNote': '如果关联账户，每条导入的记录都会像手动添加一样调整其余额。',
+    'expenses.importConfirmBtn': '导入',
+    'expenses.importSummary': '共找到 {count} 条记录 —— 支出 {expenseCount} 条，收入 {earningCount} 条。',
+    'expenses.importEmpty': '该文件中没有找到有效的记录行。',
+    'expenses.importError': '无法读取该文件 —— 请确认它是从本应用导出的 CSV（或相同格式）。',
+    'expenses.importDone': '已导入 {count} 条记录。',
     'expenses.spendingOverviewHeading': '支出概览',
     'expenses.viewList': '列表',
     'expenses.viewWheel': '饼图',
@@ -2348,6 +2378,218 @@ expenseForm.addEventListener('submit', (event) => {
   // used stays selected for the next entry.
   renderExpenseAccountOptions();
   renderExpenses();
+});
+
+// ── Expenses: CSV export/import ─────────────────────────────────────────────
+// A portable backup/migration path for the everyday-expense ledger. Export
+// writes every entry out as a CSV — amounts always in USD, the same internal
+// convention every stored entry already follows regardless of whatever
+// currency the portfolio happens to be displayed in right now. Import reads
+// one back in: each row's category is matched by name against categories
+// that already exist (creating a new custom one for any name that doesn't
+// match, rather than silently folding an unrecognized category into
+// "Other"), and every imported row can optionally be linked to one account —
+// same effect as adding each one by hand with that account picked.
+
+const expenseExportBtn           = document.getElementById('expense-export-btn');
+const expenseImportBtn           = document.getElementById('expense-import-btn');
+const expenseImportFile          = document.getElementById('expense-import-file');
+const expenseImportReview        = document.getElementById('expense-import-review');
+const expenseImportSummaryEl     = document.getElementById('expense-import-summary');
+const expenseImportAccountSelect = document.getElementById('expense-import-account');
+const expenseImportConfirmBtn    = document.getElementById('expense-import-confirm-btn');
+const expenseImportCancelBtn     = document.getElementById('expense-import-cancel-btn');
+enhanceSelect(expenseImportAccountSelect);
+
+function escapeCsvField(value) {
+  const str = String(value ?? '');
+  return /[",\n\r]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+}
+
+function expensesToCsv(entries) {
+  const header = ['Date', 'Type', 'Category', 'Description', 'Amount (USD)'];
+  const rows = entries.map((e) => {
+    // Same "fall back to Other" convention every other category lookup in
+    // this file follows (see renderExpenseBreakdown) — a hidden or
+    // since-deleted category shouldn't export as a raw UUID.
+    const catMap = categoryMapForType(e.type);
+    const cat = catMap.get(e.category) || catMap.get('other');
+    return [e.date, e.type, categoryLabel(cat, e.type), e.description || '', e.amount.toFixed(2)];
+  });
+  return [header, ...rows].map((row) => row.map(escapeCsvField).join(',')).join('\r\n');
+}
+
+expenseExportBtn.addEventListener('click', () => {
+  const csv = expensesToCsv(expenses);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `tradone-expenses-${todayLocalISODate()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+// Hand-rolled rather than a plain split(',') — a quoted field (the common
+// case for a Description containing its own comma) needs real quote-aware
+// parsing, including a doubled "" as an escaped quote inside one.
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; }
+      } else {
+        field += c;
+      }
+      continue;
+    }
+    if (c === '"') { inQuotes = true; continue; }
+    if (c === ',') { row.push(field); field = ''; continue; }
+    if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(field);
+      field = '';
+      if (row.length > 1 || row[0] !== '') rows.push(row);
+      row = [];
+      continue;
+    }
+    field += c;
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+// Resolves a CSV row's category text to a category id — an exact-name match
+// (built-in or custom, case-insensitive) if one already exists, otherwise a
+// brand new custom category, so an imported category never silently
+// collapses into "Other" just because the importing device has never seen
+// it before.
+function resolveImportCategory(type, labelText) {
+  const trimmed = (labelText || '').trim();
+  if (!trimmed) return 'other';
+  const existing = categoriesForType(type).find((cat) => categoryLabel(cat, type).toLowerCase() === trimmed.toLowerCase());
+  if (existing) return existing.value;
+  const id = crypto.randomUUID();
+  customExpenseCategories = [...customExpenseCategories, { id, value: id, type, label: trimmed, color: nextCustomCategoryColor(type), custom: true }];
+  return id;
+}
+
+// Rows parsed from the most recently picked file, held here between the
+// summary being shown and the user confirming (or cancelling) the import —
+// mirrors pendingImportEntries's own lifetime: set on file read, cleared on
+// confirm or cancel.
+let pendingImportEntries = null;
+
+// Deliberately a separate small render from renderExpenseAccountOptions
+// above: this one doesn't need to remember/restore a "last used" default,
+// since every import is its own one-off choice.
+function renderImportAccountOptions() {
+  const linkable = accounts.filter((a) => a.type !== 'wallet');
+  expenseImportAccountSelect.innerHTML = [
+    `<option value="" data-i18n="expenses.accountNone">${t('expenses.accountNone')}</option>`,
+    ...linkable.map((a) => `<option value="${a.id}">${a.name || t(`accountType.${a.type}`)} — ${t(`accountType.${a.type}`)}</option>`)
+  ].join('');
+  refreshCustomSelect(expenseImportAccountSelect);
+}
+
+expenseImportBtn.addEventListener('click', () => expenseImportFile.click());
+
+expenseImportFile.addEventListener('change', () => {
+  const file = expenseImportFile.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const rows = parseCsv(String(reader.result));
+      // The first row is treated as a header only if its first cell isn't
+      // itself a date — tolerates a file with or without a header line
+      // instead of requiring one to match exactly.
+      const startIdx = rows.length && /^\d{4}-\d{2}-\d{2}$/.test((rows[0][0] || '').trim()) ? 0 : 1;
+
+      const parsed = [];
+      for (let i = startIdx; i < rows.length; i++) {
+        const [dateRaw, typeRaw, categoryRaw, descriptionRaw, amountRaw] = rows[i];
+        const date = (dateRaw || '').trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+        const amount = Number(amountRaw);
+        if (!Number.isFinite(amount) || amount <= 0) continue;
+        const type = (typeRaw || '').trim().toLowerCase() === 'earning' ? 'earning' : 'expense';
+        parsed.push({ date, type, categoryRaw: (categoryRaw || '').trim(), description: (descriptionRaw || '').trim(), amount });
+      }
+
+      if (!parsed.length) {
+        alert(t('expenses.importEmpty'));
+        return;
+      }
+
+      pendingImportEntries = parsed;
+      const expenseCount = parsed.filter((p) => p.type === 'expense').length;
+      const earningCount = parsed.length - expenseCount;
+      expenseImportSummaryEl.textContent = t('expenses.importSummary')
+        .replace('{count}', parsed.length)
+        .replace('{expenseCount}', expenseCount)
+        .replace('{earningCount}', earningCount);
+      renderImportAccountOptions();
+      expenseImportReview.style.display = '';
+    } catch {
+      alert(t('expenses.importError'));
+    } finally {
+      expenseImportFile.value = '';
+    }
+  };
+  reader.onerror = () => alert(t('expenses.importError'));
+  reader.readAsText(file);
+});
+
+expenseImportCancelBtn.addEventListener('click', () => {
+  pendingImportEntries = null;
+  expenseImportReview.style.display = 'none';
+});
+
+expenseImportConfirmBtn.addEventListener('click', () => {
+  if (!pendingImportEntries) return;
+  const accountId = expenseImportAccountSelect.value || null;
+  const account = accountId ? accounts.find((a) => a.id === accountId) : null;
+
+  const newEntries = pendingImportEntries.map((p) => ({
+    id: crypto.randomUUID(),
+    type: p.type,
+    category: resolveImportCategory(p.type, p.categoryRaw),
+    description: p.description,
+    amount: p.amount,
+    date: p.date,
+    accountId,
+    createdAt: new Date().toISOString()
+  }));
+
+  expenses = [...newEntries, ...expenses];
+  saveExpenses();
+  saveCustomExpenseCategories();
+
+  if (account) {
+    // One combined balance adjustment rather than one applyAccountBalanceDelta
+    // call per row — same end result, a single account mutation instead of
+    // potentially hundreds for a large import.
+    const netDelta = newEntries.reduce((sum, e) => sum + (e.type === 'earning' ? e.amount : -e.amount), 0);
+    applyAccountBalanceDelta(accountId, netDelta);
+  }
+
+  syncProfileToServer();
+  const importedCount = newEntries.length;
+  pendingImportEntries = null;
+  expenseImportReview.style.display = 'none';
+  renderExpenseCategoryOptions(expenseFormType);
+  renderExpenseAccountOptions();
+  renderExpenses();
+  render();
+  alert(t('expenses.importDone').replace('{count}', importedCount));
 });
 
 expensePeriodSelect.addEventListener('change', () => {
