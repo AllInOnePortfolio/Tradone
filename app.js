@@ -5169,13 +5169,19 @@ function buildCryptoPortfolioCardSpec() {
   // mergePositionGroup does per-row for each position's own % Change — never
   // from a position's current value standing in for an unknown cost.
   const totalCost = knownGain.reduce((s, p) => s + ((p.currentValue ?? 0) - p.gainAbsolute), 0);
-  // Gain/Loss and Return are derived from Current Value and Cost (rather
-  // than summed independently) so the four headline numbers always
-  // reconcile: Current Value − Cost = Gain/Loss, Gain/Loss ÷ Cost = Return.
-  // Since Cost only covers the known positions, any position without a
-  // historical price effectively counts its whole current value as gain
-  // here — see the coverage count and disclaimer below.
-  const totalGain = totalCurrentValue - totalCost;
+  // Gain/Loss is summed directly from each known position's own gainAbsolute
+  // — NOT derived as totalCurrentValue − totalCost. That subtraction used to
+  // look tempting for "these three numbers reconcile," but totalCurrentValue
+  // covers every position while totalCost only covers the ones with a real
+  // cost basis, so every uncovered position's *entire* current value was
+  // silently counted as pure gain against an assumed $0 cost — wildly
+  // inflating Gain/Loss and Return the moment a wallet has more than a
+  // handful of tokens (only the top 5 by value per chain get a historical
+  // price — see server.js). Scoping both Gain/Loss and Return to the known
+  // subset, same as Cost already is, means Current Value is the only one of
+  // the three that covers the whole portfolio — see the coverage count and
+  // disclaimer below for that partial-coverage caveat.
+  const totalGain = knownGain.reduce((s, p) => s + p.gainAbsolute, 0);
   const totalPct  = totalCost > 0 ? (totalGain / totalCost) * 100 : null;
 
   // Cost is the only one of these three stats with partial coverage — it
@@ -5199,11 +5205,11 @@ function buildCryptoPortfolioCardSpec() {
         <div class="stat-value">${totalCost > 0 ? fmtUSD(totalCost) : 'N/A'}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">${t('stat.openPnl')}</div>
+        <div class="stat-label">${t('stat.openPnl')}${coverageLabel}</div>
         <div class="stat-value ${gainClass(totalGain)}">${knownGain.length ? fmtUSD(totalGain) : 'N/A'}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">${t('stat.totalReturn')}</div>
+        <div class="stat-label">${t('stat.totalReturn')}${coverageLabel}</div>
         <div class="stat-value ${gainClass(totalPct)}">${fmtPct(totalPct)}</div>
       </div>
       <div class="stat-card">
