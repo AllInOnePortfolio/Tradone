@@ -5443,34 +5443,36 @@ function stopBankidPolling() {
   }
 }
 
-avanzaBankidStartBtn.addEventListener('click', () => {
-  withLoading(async () => {
+// Avanza's BankID start endpoint is method-exclusive (confirmed live): QR_START
+// returns only a qrToken, AUTOSTART only an autostartToken — there's no single
+// call that returns both, so switching between the QR and "Open BankID app"
+// views means starting an entirely new BankID transaction with the other
+// method, not just toggling visibility of already-fetched data. Shared by the
+// initial button and the "Show QR code instead" fallback below.
+function startBankidFlow(method) {
+  return withLoading(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/auth/bankid/start`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method }),
         signal: AbortSignal.timeout(15_000)
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to start BankID login.');
 
+      stopBankidPolling();
       bankidFlowId = data.flowId;
-      avanzaBankidQrImg.src = data.qr;
 
-      // A phone can't scan a QR code on its own screen, so if BankID's
-      // "auto start" token came through and we're actually on a phone, that
-      // becomes the primary path — open the app directly instead. Falls
-      // back to the QR-first view otherwise (desktop, or if Avanza's
-      // response didn't include a token for some reason).
-      const autoStartUrl = data.autoStartToken
-        ? `https://app.bankid.com/?autostarttoken=${encodeURIComponent(data.autoStartToken)}&redirect=null`
-        : null;
-      if (isMobileDevice && autoStartUrl) {
-        avanzaBankidOpenAppBtn.href = autoStartUrl;
+      if (method === 'AUTOSTART') {
+        const autostartUrl = `https://app.bankid.com/?autostarttoken=${encodeURIComponent(data.autostartToken)}&redirect=null`;
+        avanzaBankidOpenAppBtn.href = autostartUrl;
         avanzaBankidOpenAppBtn.style.display = '';
         avanzaBankidQrImg.style.display = 'none';
         avanzaBankidToggleQrBtn.style.display = '';
         avanzaBankidHint.textContent = t('broker.bankidHintSameDevice');
       } else {
+        avanzaBankidQrImg.src = data.qr;
         avanzaBankidOpenAppBtn.style.display = 'none';
         avanzaBankidQrImg.style.display = '';
         avanzaBankidToggleQrBtn.style.display = 'none';
@@ -5483,6 +5485,13 @@ avanzaBankidStartBtn.addEventListener('click', () => {
       alert(`Failed to start BankID login: ${err.message}`);
     }
   });
+}
+
+// A phone can't scan a QR code on its own screen, so it leads with the
+// same-device "Open BankID app" flow instead; desktop keeps the QR it
+// always had.
+avanzaBankidStartBtn.addEventListener('click', () => {
+  startBankidFlow(isMobileDevice ? 'AUTOSTART' : 'QR_START');
 });
 
 function pollBankid() {
@@ -5524,14 +5533,11 @@ avanzaBankidCancelBtn.addEventListener('click', () => {
   showAvanzaView('login');
 });
 
-// Switches from the "Open BankID app" view to the QR view without
-// restarting the login attempt — both approve the exact same underlying
-// BankID order, so the poll already in flight keeps working either way.
+// Unlike a plain view toggle, this has to start a brand new BankID
+// transaction — Avanza's AUTOSTART method never hands back a qrToken to
+// fall back to, so there's no existing QR to just reveal.
 avanzaBankidToggleQrBtn.addEventListener('click', () => {
-  avanzaBankidOpenAppBtn.style.display = 'none';
-  avanzaBankidQrImg.style.display = '';
-  avanzaBankidToggleQrBtn.style.display = 'none';
-  avanzaBankidHint.textContent = t('broker.bankidHint');
+  startBankidFlow('QR_START');
 });
 
 avanzaDisconnectBtn.addEventListener('click', () => {

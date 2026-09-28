@@ -85,8 +85,17 @@ app.post('/api/auth', async (req, res) => {
 // server, many of these can be in flight at once here (one per visitor
 // mid-scan), so each gets its own flowId rather than sharing one module
 // global — see bankidFlows below.
-const bankidFlows = new Map(); // flowId -> { cookie, expiresAt }
+const bankidFlows = new Map(); // flowId -> { cookie, method, expiresAt }
 const BANKID_FLOW_TTL_MS = 5 * 60 * 1000;
+// Avanza's BankID start endpoint is method-exclusive, confirmed live against
+// the real API: QR_START returns only a qrToken, AUTOSTART returns only an
+// autostartToken (the standard BankID field for launching the app directly
+// on the same device — impossible to scan a QR shown on the same phone
+// you'd scan it with). There's no single request that returns both, so the
+// client picks one up front (mobile defaults to AUTOSTART, desktop to
+// QR_START) and can restart the whole flow with the other method if needed
+// (see "Show QR code instead").
+const BANKID_START_METHODS = new Set(['QR_START', 'AUTOSTART']);
 
 // Sweeps flows nobody ever finished polling (closed tab mid-scan, etc.) so
 // they don't accumulate in memory on a long-running, many-visitor relay.
@@ -97,12 +106,13 @@ setInterval(() => {
   }
 }, 60_000).unref();
 
-app.post('/api/auth/bankid/start', async (_req, res) => {
+app.post('/api/auth/bankid/start', async (req, res) => {
+  const method = BANKID_START_METHODS.has(req.body?.method) ? req.body.method : 'QR_START';
   try {
     const upstream = await fetch(`${AVANZA_BASE}/_api/authentication/v2/sessions/bankid`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ method: 'QR_START', returnScheme: 'NULL' })
+      body: JSON.stringify({ method, returnScheme: 'NULL' })
     });
     const setCookie = upstream.headers.get('set-cookie');
     const match = setCookie && /AZABANKIDTRANSID=[^;]+/.exec(setCookie);
@@ -110,16 +120,16 @@ app.post('/api/auth/bankid/start', async (_req, res) => {
 
     const data = await upstream.json();
     const flowId = crypto.randomUUID();
-    bankidFlows.set(flowId, { cookie: match[0], expiresAt: Date.now() + BANKID_FLOW_TTL_MS });
+    bankidFlows.set(flowId, { cookie: match[0], method, expiresAt: Date.now() + BANKID_FLOW_TTL_MS });
 
-    const qrDataUrl = await QRCode.toDataURL(data.qrToken);
-    // Standard BankID "auto start" support — every real BankID relying-party
-    // response carries this alongside the QR token, for launching the app
-    // directly on the same device instead of scanning a QR code (which is
-    // impossible when the QR is on the same screen you'd scan it with, i.e.
-    // a phone). Forwarded as-is if Avanza's wrapper includes it; the client
-    // only offers the "Open BankID app" button when it's actually present.
-    res.json({ flowId, qr: qrDataUrl, autoStartToken: data.autoStartToken || null, expires: data.expires });
+    if (method === 'AUTOSTART') {
+      // No QR to render at all for this method — Avanza's response is just
+      // {transactionId, expires, autostartToken}.
+      res.json({ flowId, qr: null, autostartToken: data.autostartToken || null, expires: data.expires });
+    } else {
+      const qrDataUrl = await QRCode.toDataURL(data.qrToken);
+      res.json({ flowId, qr: qrDataUrl, autostartToken: null, expires: data.expires });
+    }
   } catch (err) {
     const msg = typeof err === 'string' ? err : (err.message || 'Failed to start BankID login.');
     console.error('BankID start error:', msg);
@@ -127,9 +137,12 @@ app.post('/api/auth/bankid/start', async (_req, res) => {
   }
 });
 
-// Polled every couple of seconds while the QR code is on screen. Each call
-// both refreshes the QR (Avanza rotates it roughly every second) and checks
-// whether the phone has approved yet, so the frontend only needs one loop.
+// Polled every couple of seconds while the QR code (or the "Open BankID
+// app" view) is on screen. For a QR_START flow, each call both refreshes
+// the QR (Avanza rotates it roughly every second) and checks whether it's
+// been approved yet. /restart is QR-specific — confirmed live, it errors
+// with {"err":"UNKNOWN"} for a flow started via AUTOSTART, which has no QR
+// to rotate — so it's skipped entirely for those, going straight to collect.
 app.post('/api/auth/bankid/poll', async (req, res) => {
   const { flowId } = req.body || {};
   const flow = flowId && bankidFlows.get(flowId);
@@ -139,13 +152,16 @@ app.post('/api/auth/bankid/poll', async (req, res) => {
   const bankidTransCookie = flow.cookie;
 
   try {
-    const restartRes = await fetch(`${AVANZA_BASE}/_api/authentication/v2/sessions/bankid/restart`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Cookie: bankidTransCookie },
-      body: '{}'
-    });
-    const restartData = await restartRes.json();
-    const qrDataUrl = await QRCode.toDataURL(restartData.qrToken);
+    let qrDataUrl = null;
+    if (flow.method === 'QR_START') {
+      const restartRes = await fetch(`${AVANZA_BASE}/_api/authentication/v2/sessions/bankid/restart`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: bankidTransCookie },
+        body: '{}'
+      });
+      const restartData = await restartRes.json();
+      qrDataUrl = await QRCode.toDataURL(restartData.qrToken);
+    }
 
     const collectRes = await fetch(`${AVANZA_BASE}/_api/authentication/v2/sessions/bankid/collect`, {
       method: 'POST',
