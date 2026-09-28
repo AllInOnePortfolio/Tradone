@@ -329,6 +329,48 @@ const Vault = (() => {
     await saveFields(toSave);
   }
 
+  // Backup format tag, bumped only if the raw record shape below ever
+  // changes — importBackup refuses anything that doesn't match, rather
+  // than guessing at an incompatible shape.
+  const BACKUP_FORMAT = 'tradone-vault-backup-v1';
+
+  // Exports the vault's raw records (salt, canary, schema version, and the
+  // still-encrypted profile record) exactly as stored — nothing is ever
+  // decrypted here, so this never touches the passphrase or derived key,
+  // and doesn't even require the vault to be unlocked. The resulting file
+  // is exactly as secure as the vault itself: useless without the same
+  // passphrase, on any device — a deliberate choice over a cloud-synced
+  // account so no server ever holds even encrypted copies of user data.
+  async function exportBackup() {
+    const db = await openDatabase();
+    const salt = await idbGet(db, STORE_META, 'salt');
+    if (!salt) throw new Error('No vault exists yet — nothing to back up.');
+    const canary = await idbGet(db, STORE_META, 'canary');
+    const schemaVersion = await idbGet(db, STORE_META, 'schemaVersion');
+    const profile = await idbGet(db, STORE_PROFILE, PROFILE_RECORD_ID);
+    return { format: BACKUP_FORMAT, salt, canary, schemaVersion, profile };
+  }
+
+  // Writes a previously-exported backup's raw records directly into this
+  // device's vault storage, moving a vault device-to-device without ever
+  // decrypting anything here either — the same passphrase that worked on
+  // the original device unlocks it here too, since the salt/canary/profile
+  // ciphertext are copied verbatim. Only usable when no vault exists yet on
+  // this device, same "don't silently overwrite" rule createVault follows.
+  async function importBackup(backup) {
+    if (!backup || backup.format !== BACKUP_FORMAT) {
+      throw new Error('Not a recognized Tradone vault backup file.');
+    }
+    const db = await openDatabase();
+    if (await idbGet(db, STORE_META, 'salt')) {
+      throw new Error('A vault already exists on this device — restoring would overwrite it.');
+    }
+    await idbPut(db, STORE_META, backup.salt);
+    await idbPut(db, STORE_META, backup.canary);
+    await idbPut(db, STORE_META, backup.schemaVersion);
+    await idbPut(db, STORE_PROFILE, backup.profile);
+  }
+
   return {
     hasExistingVault,
     createVault,
@@ -340,6 +382,8 @@ const Vault = (() => {
     saveFields,
     exportProfileJson,
     importProfileFields,
+    exportBackup,
+    importBackup,
     PROFILE_FIELDS
   };
 })();

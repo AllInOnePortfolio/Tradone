@@ -330,6 +330,9 @@ const TRANSLATIONS = {
     'settings.weekStartLabel': 'Week starts on',
     'settings.weekStartMonday': 'Monday',
     'settings.weekStartSunday': 'Sunday',
+    'settings.vaultBackupHeading': 'Move to another device',
+    'settings.vaultBackupNote': "Downloads your whole account — accounts, wallets, expenses, everything — as an encrypted file. It's useless without your passphrase, even to whoever ends up holding the file, so it's safe to move by email, USB, or a cloud drive. On the new device, pick \"Restore from a backup file\" on the sign-up screen and enter this same passphrase.",
+    'settings.vaultExportBtn': 'Download encrypted backup',
 
     'card.cryptoPortfolio': 'Crypto Portfolio',
     'card.avanza': 'Avanza',
@@ -586,6 +589,9 @@ const TRANSLATIONS = {
     'settings.weekStartLabel': 'Неделя начинается с',
     'settings.weekStartMonday': 'Понедельника',
     'settings.weekStartSunday': 'Воскресенья',
+    'settings.vaultBackupHeading': 'Перенос на другое устройство',
+    'settings.vaultBackupNote': 'Скачивает весь ваш аккаунт — счета, кошельки, расходы, всё — в виде зашифрованного файла. Он бесполезен без вашей парольной фразы, даже для того, у кого окажется этот файл, поэтому его можно безопасно передать по почте, через USB или облачный диск. На новом устройстве выберите «Восстановить из файла резервной копии» на экране регистрации и введите ту же парольную фразу.',
+    'settings.vaultExportBtn': 'Скачать зашифрованную копию',
 
     'card.cryptoPortfolio': 'Криптопортфель',
     'card.avanza': 'Avanza',
@@ -841,6 +847,9 @@ const TRANSLATIONS = {
     'settings.weekStartLabel': '一周从',
     'settings.weekStartMonday': '星期一开始',
     'settings.weekStartSunday': '星期日开始',
+    'settings.vaultBackupHeading': '转移到另一台设备',
+    'settings.vaultBackupNote': '将您的整个账户 —— 账户、钱包、支出，所有数据 —— 下载为一个加密文件。即使文件落入他人手中，没有您的密码短语也无法读取，因此可以安全地通过邮件、U 盘或云盘传输。在新设备上，请在注册页面选择"从备份文件恢复"，并输入相同的密码短语。',
+    'settings.vaultExportBtn': '下载加密备份',
 
     'card.cryptoPortfolio': '加密投资组合',
     'card.avanza': 'Avanza',
@@ -2595,6 +2604,29 @@ function setupExpenseCsvIO() {
 }
 
 setupExpenseCsvIO();
+
+// Settings → "Download encrypted backup" — see Vault.exportBackup above for
+// why this is safe to move by email/USB/cloud drive: it's the vault's raw
+// still-encrypted records, never decrypted here, useless without the
+// passphrase even to whoever ends up holding the file.
+document.getElementById('settings-vault-export-btn').addEventListener('click', () => {
+  withLoading(async () => {
+    try {
+      const backup = await Vault.exportBackup();
+      const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tradone-vault-backup-${todayLocalISODate()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.message || 'Failed to export backup.');
+    }
+  });
+});
 
 expensePeriodSelect.addEventListener('change', () => {
   expenseCustomRange.style.display = expensePeriodSelect.value === 'custom' ? '' : 'none';
@@ -6326,6 +6358,43 @@ createForm.addEventListener('submit', (event) => {
       authError.textContent = err.message || 'Failed to create the vault.';
     }
   });
+});
+
+// Alternative to Sign up on a device with no vault yet — restores a whole
+// vault's raw (still-encrypted) records from a file exported via Settings'
+// "Download encrypted backup" on another device (see Vault.importBackup).
+// Only offered here, next to Sign up, since it's specifically the
+// first-run/no-vault path — an existing vault refuses to be overwritten
+// this way (see importBackup's own guard).
+const restoreBackupBtn  = document.getElementById('restore-backup-btn');
+const restoreBackupFile = document.getElementById('restore-backup-file');
+
+restoreBackupBtn.addEventListener('click', () => restoreBackupFile.click());
+
+restoreBackupFile.addEventListener('change', () => {
+  const file = restoreBackupFile.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    withLoading(async () => {
+      try {
+        const backup = JSON.parse(reader.result);
+        await Vault.importBackup(backup);
+        authError.textContent = '';
+        // Re-checks hasExistingVault() the same way boot does, so the gate
+        // now shows Log in instead of Sign up — the restored vault unlocks
+        // with whatever passphrase was set on the original device.
+        setGateView('unlock');
+      } catch (err) {
+        authError.textContent = err.message || 'Failed to restore that backup file.';
+      }
+    });
+  };
+  reader.onerror = () => {
+    authError.textContent = 'Failed to read that file.';
+  };
+  reader.readAsText(file);
+  restoreBackupFile.value = '';
 });
 
 logoutBtn.addEventListener('click', () => {

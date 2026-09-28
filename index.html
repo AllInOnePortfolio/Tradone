@@ -51,6 +51,8 @@
             <input id="create-passphrase-confirm" type="password" autocomplete="new-password" minlength="8" required />
           </label>
           <button type="submit" class="avanza-btn">Sign up</button>
+          <button type="button" id="restore-backup-btn" class="link-btn" style="margin-top:10px">Restore from a backup file instead</button>
+          <input type="file" id="restore-backup-file" accept=".json,application/json" style="display:none" />
         </form>
 
         <p id="auth-error" class="auth-error"></p>
@@ -609,6 +611,14 @@
                 <button type="button" id="settings-expense-import-confirm-btn" class="avanza-btn" data-i18n="expenses.importConfirmBtn">Import</button>
                 <button type="button" id="settings-expense-import-cancel-btn" class="link-btn" data-i18n="common.cancel">Cancel</button>
               </div>
+            </div>
+          </div>
+
+          <div class="expense-io-section">
+            <h2 data-i18n="settings.vaultBackupHeading">Move to another device</h2>
+            <p class="avanza-note" data-i18n="settings.vaultBackupNote">Downloads your whole account — accounts, wallets, expenses, everything — as an encrypted file. It's useless without your passphrase, even to whoever ends up holding the file, so it's safe to move by email, USB, or a cloud drive. On the new device, pick "Restore from a backup file" on the sign-up screen and enter this same passphrase.</p>
+            <div class="expense-io-actions">
+              <button type="button" id="settings-vault-export-btn" class="avanza-btn avanza-btn-secondary" data-i18n="settings.vaultExportBtn">Download encrypted backup</button>
             </div>
           </div>
         </section>

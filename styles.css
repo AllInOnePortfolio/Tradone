@@ -504,6 +504,19 @@ p {
   font-weight: 600;
 }
 
+/* Same .account-form button {...} specificity fight as .expense-type-btn
+   above — without this, the auth gate's "Restore from a backup file
+   instead" link (inside .account-form) would repaint as an orange gradient
+   pill instead of the plain text link it's meant to be. */
+.account-form .link-btn {
+  border: 0;
+  background: transparent;
+  color: #fbbf24;
+  padding: 0;
+  font-weight: 400;
+  text-decoration: underline;
+}
+
 .section-heading {
   display: flex;
   justify-content: space-between;
