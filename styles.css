@@ -9,6 +9,15 @@
   box-sizing: border-box;
 }
 
+/* Safety net, not a fix for any specific element — a single unaccounted-for
+   wide child anywhere in this large a codebase would otherwise force a
+   horizontal scrollbar on the whole page, which is far more disruptive on a
+   phone (where it also fights the browser's own edge-swipe gestures) than
+   on desktop. */
+html {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -2836,6 +2845,22 @@ body.dragging-active {
   text-decoration: underline;
 }
 
+/* ── No-hover devices ──────────────────────────────────────────── */
+/* A touch device never fires :hover in any persistent sense, so anything
+   whose only way to appear is ".position-row:hover .position-*-btn"
+   (opacity:0 by default — see those rules above) is invisible and
+   untappable there: no way to hide, edit, or delete a position at all.
+   `hover: none` targets touch capability directly rather than proxying it
+   through screen width, so this also covers a touch laptop or tablet in a
+   wide window, not just a narrow phone viewport. */
+@media (hover: none), (pointer: coarse) {
+  .position-hide-btn,
+  .position-delete-btn,
+  .position-edit-btn {
+    opacity: 1;
+  }
+}
+
 /* ── Responsive ────────────────────────────────────────────────── */
 
 @media (max-width: 900px) {
@@ -2897,6 +2922,49 @@ body.dragging-active {
   .expense-calendar-week-total {
     font-size: 0.7rem;
     padding: 2px 1px;
+  }
+
+  /* ── Touch targets ─────────────────────────────────────────────
+     These sizes are fine with a mouse pointer but well under the
+     ~40-44px a thumb needs to hit reliably — bumped here rather than
+     globally so desktop's tighter, precise layout is untouched. */
+
+  .privacy-toggle-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .currency-dropdown-btn {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+
+  .expense-category-remove-btn {
+    width: 24px;
+    height: 24px;
+  }
+
+  .expense-category-menu .expense-category-icon-option {
+    width: 34px;
+    height: 34px;
+  }
+
+  /* Widened enough that the day grid below actually gets bigger cells
+     out of it — JS clamps the popup back on-screen dynamically (see
+     positionDatePicker in app.js), so this is safe at any viewport width
+     this breakpoint applies to. */
+  .date-picker-popup {
+    width: 300px;
+  }
+
+  .date-picker-day {
+    padding: 10px 0;
+    font-size: 0.9rem;
+  }
+
+  .date-picker-nav {
+    padding: 8px 12px;
+    font-size: 1.3rem;
   }
 }
 
