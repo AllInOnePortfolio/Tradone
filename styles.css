@@ -916,6 +916,16 @@ body.dragging-active {
   margin-top: 8px;
 }
 
+/* .avanza-btn is written for <button>s (text is centered, never underlined,
+   by default) — the "Open BankID app" link is an <a> instead (so tapping it
+   is a plain navigation the OS can hand off to the BankID app), which needs
+   both set explicitly. */
+#avanza-bankid-open-app-btn {
+  text-align: center;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
 .avanza-btn-secondary {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.15);

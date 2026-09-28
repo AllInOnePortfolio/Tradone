@@ -267,8 +267,14 @@
                 <p data-i18n="broker.connectingToAvanza">Connecting to Avanza&hellip;</p>
               </div>
               <div id="avanza-waiting-qr" style="display:none; text-align:center">
+                <!-- Shown instead of the QR on a phone (where you can't scan your
+                     own screen) — launches the BankID app directly via the same
+                     underlying login attempt the QR represents, so approving
+                     either way completes the same poll. -->
+                <a id="avanza-bankid-open-app-btn" class="avanza-btn" style="display:none" data-i18n="broker.openBankidAppBtn">Open BankID app</a>
                 <img id="avanza-bankid-qr" alt="BankID QR code" width="220" height="220" style="border-radius:12px" />
                 <p class="avanza-note" id="avanza-bankid-hint" data-i18n="broker.bankidHint">Open BankID on your phone and scan the code.</p>
+                <button type="button" id="avanza-bankid-toggle-qr-btn" class="link-btn" style="display:none; margin-bottom:10px" data-i18n="broker.showQrInstead">Show QR code instead</button>
                 <button type="button" id="avanza-bankid-cancel-btn" class="link-btn" data-i18n="common.cancel">Cancel</button>
               </div>
             </div>

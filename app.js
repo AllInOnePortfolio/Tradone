@@ -189,6 +189,9 @@ const TRANSLATIONS = {
     'broker.useBankidInstead': 'Use BankID instead',
     'broker.connectingToAvanza': 'Connecting to Avanza…',
     'broker.bankidHint': 'Open BankID on your phone and scan the code.',
+    'broker.bankidHintSameDevice': 'Tap the button to open BankID and approve the login.',
+    'broker.openBankidAppBtn': 'Open BankID app',
+    'broker.showQrInstead': 'Show QR code instead',
     'broker.fetchingAccounts': 'Fetching accounts…',
     'broker.refreshAccountsBtn': 'Refresh accounts',
     'broker.manualToggle': 'Enter account manually instead',
@@ -448,6 +451,9 @@ const TRANSLATIONS = {
     'broker.useBankidInstead': 'Использовать BankID',
     'broker.connectingToAvanza': 'Подключение к Avanza…',
     'broker.bankidHint': 'Откройте BankID на телефоне и отсканируйте код.',
+    'broker.bankidHintSameDevice': 'Нажмите кнопку, чтобы открыть BankID и подтвердить вход.',
+    'broker.openBankidAppBtn': 'Открыть приложение BankID',
+    'broker.showQrInstead': 'Показать QR-код вместо этого',
     'broker.fetchingAccounts': 'Загрузка счетов…',
     'broker.refreshAccountsBtn': 'Обновить счета',
     'broker.manualToggle': 'Ввести счёт вручную',
@@ -707,6 +713,9 @@ const TRANSLATIONS = {
     'broker.useBankidInstead': '改用 BankID',
     'broker.connectingToAvanza': '正在连接 Avanza…',
     'broker.bankidHint': '请在手机上打开 BankID 并扫描二维码。',
+    'broker.bankidHintSameDevice': '点击按钮打开 BankID 并确认登录。',
+    'broker.openBankidAppBtn': '打开 BankID 应用',
+    'broker.showQrInstead': '改为显示二维码',
     'broker.fetchingAccounts': '正在获取账户…',
     'broker.refreshAccountsBtn': '刷新账户',
     'broker.manualToggle': '改为手动添加账户',
@@ -5347,6 +5356,15 @@ const avanzaWaitingQr        = document.getElementById('avanza-waiting-qr');
 const avanzaBankidQrImg      = document.getElementById('avanza-bankid-qr');
 const avanzaBankidHint       = document.getElementById('avanza-bankid-hint');
 const avanzaBankidCancelBtn  = document.getElementById('avanza-bankid-cancel-btn');
+const avanzaBankidOpenAppBtn = document.getElementById('avanza-bankid-open-app-btn');
+const avanzaBankidToggleQrBtn = document.getElementById('avanza-bankid-toggle-qr-btn');
+
+// Scanning a QR code shown on the same screen you're holding it up to is
+// impossible on a phone — BankID's standard "auto start" flow (launching
+// the app directly via a link, no camera involved) is the phone-side
+// equivalent of scanning, and completes the exact same underlying login
+// attempt, so the existing poll loop picks it up either way.
+const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 // Called (from loadProfileAndRestore) only when the vault handed back a
 // stored avanzaSession — attempts to use it live. loadAllAvanzaAccounts
@@ -5437,7 +5455,28 @@ avanzaBankidStartBtn.addEventListener('click', () => {
 
       bankidFlowId = data.flowId;
       avanzaBankidQrImg.src = data.qr;
-      avanzaBankidHint.textContent = 'Open BankID on your phone and scan the code.';
+
+      // A phone can't scan a QR code on its own screen, so if BankID's
+      // "auto start" token came through and we're actually on a phone, that
+      // becomes the primary path — open the app directly instead. Falls
+      // back to the QR-first view otherwise (desktop, or if Avanza's
+      // response didn't include a token for some reason).
+      const autoStartUrl = data.autoStartToken
+        ? `https://app.bankid.com/?autostarttoken=${encodeURIComponent(data.autoStartToken)}&redirect=null`
+        : null;
+      if (isMobileDevice && autoStartUrl) {
+        avanzaBankidOpenAppBtn.href = autoStartUrl;
+        avanzaBankidOpenAppBtn.style.display = '';
+        avanzaBankidQrImg.style.display = 'none';
+        avanzaBankidToggleQrBtn.style.display = '';
+        avanzaBankidHint.textContent = t('broker.bankidHintSameDevice');
+      } else {
+        avanzaBankidOpenAppBtn.style.display = 'none';
+        avanzaBankidQrImg.style.display = '';
+        avanzaBankidToggleQrBtn.style.display = 'none';
+        avanzaBankidHint.textContent = t('broker.bankidHint');
+      }
+
       showAvanzaView('waiting', 'qr');
       pollBankid();
     } catch (err) {
@@ -5483,6 +5522,16 @@ avanzaBankidCancelBtn.addEventListener('click', () => {
   stopBankidPolling();
   bankidFlowId = null;
   showAvanzaView('login');
+});
+
+// Switches from the "Open BankID app" view to the QR view without
+// restarting the login attempt — both approve the exact same underlying
+// BankID order, so the poll already in flight keeps working either way.
+avanzaBankidToggleQrBtn.addEventListener('click', () => {
+  avanzaBankidOpenAppBtn.style.display = 'none';
+  avanzaBankidQrImg.style.display = '';
+  avanzaBankidToggleQrBtn.style.display = 'none';
+  avanzaBankidHint.textContent = t('broker.bankidHint');
 });
 
 avanzaDisconnectBtn.addEventListener('click', () => {

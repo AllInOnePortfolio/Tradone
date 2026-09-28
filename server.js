@@ -113,7 +113,13 @@ app.post('/api/auth/bankid/start', async (_req, res) => {
     bankidFlows.set(flowId, { cookie: match[0], expiresAt: Date.now() + BANKID_FLOW_TTL_MS });
 
     const qrDataUrl = await QRCode.toDataURL(data.qrToken);
-    res.json({ flowId, qr: qrDataUrl, expires: data.expires });
+    // Standard BankID "auto start" support — every real BankID relying-party
+    // response carries this alongside the QR token, for launching the app
+    // directly on the same device instead of scanning a QR code (which is
+    // impossible when the QR is on the same screen you'd scan it with, i.e.
+    // a phone). Forwarded as-is if Avanza's wrapper includes it; the client
+    // only offers the "Open BankID app" button when it's actually present.
+    res.json({ flowId, qr: qrDataUrl, autoStartToken: data.autoStartToken || null, expires: data.expires });
   } catch (err) {
     const msg = typeof err === 'string' ? err : (err.message || 'Failed to start BankID login.');
     console.error('BankID start error:', msg);
