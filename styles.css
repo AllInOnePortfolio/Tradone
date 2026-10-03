@@ -29,6 +29,11 @@ body {
      with a card open. Fixed attachment sizes/positions the gradient against
      the viewport instead, so it looks identical regardless of page length. */
   background-attachment: fixed;
+  /* Belt-and-suspenders alongside html's own overflow-x:hidden above — some
+     mobile browsers treat <body>, not <html>, as the actual scrolling
+     element, so both need it set for horizontal scroll to be reliably
+     blocked rather than just usually blocked. */
+  overflow-x: hidden;
 }
 
 button,
@@ -388,6 +393,15 @@ p {
   gap: 6px;
   color: #e8d5d8;
   font-size: 0.95rem;
+  /* Same min-width:auto default-sizing issue as .custom-select-label above
+     (this is a grid item of .account-form rather than a flex item, but the
+     same rule applies to grid items too) — without this, a label wrapping
+     a custom-select whose content doesn't truncate cleanly can force this
+     entire grid row, and everything up the ancestor chain, wider than the
+     viewport. Confirmed via headless-browser check that fixing
+     .custom-select-label's own flex-level version of this bug alone
+     wasn't enough; both levels were needed. */
+  min-width: 0;
 }
 
 .account-form input,
@@ -413,6 +427,12 @@ p {
 
 .custom-select {
   position: relative;
+  /* Third and final level of the same min-width:auto default-sizing chain
+     as .account-form label and .custom-select-label above — this is the
+     direct grid-item wrapper around the oversized button, and without
+     this override it was still the actual remaining bottleneck even after
+     fixing the other two levels (confirmed via headless-browser re-check). */
+  min-width: 0;
 }
 
 /* Doubled up as ".account-form .custom-select-btn" too — three of the four
@@ -447,6 +467,17 @@ p {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* The classic flexbox truncation gotcha: as a flex item (child of
+     .custom-select-btn's display:flex) this defaults to min-width:auto,
+     i.e. its full untruncated text width as a hard floor — the ellipsis
+     above never actually gets a chance to apply, and everything up the
+     ancestor chain gets dragged wider to fit instead. Confirmed live via
+     a headless-browser check at phone width: this was the actual cause
+     of horizontal page scroll on the Settings page specifically (the one
+     panel with no ancestor already forcing a min-width:0 to contain it),
+     though the same underlying bug affects every select enhanced by
+     enhanceSelect() in app.js, not just that page. */
+  min-width: 0;
 }
 
 .custom-select.open .dropdown-chevron {
