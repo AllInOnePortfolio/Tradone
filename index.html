@@ -19,6 +19,14 @@
 
     <div id="auth-gate" class="auth-gate">
       <div class="auth-hero">
+        <div class="auth-hero-row">
+        <!-- Hidden below the wide-screen breakpoint (see styles.css) — on
+             tablet/phone this space doesn't exist, and the About section
+             below the fold already carries the same explainer content. -->
+        <div class="auth-hero-side auth-hero-side-left" aria-hidden="true">
+          <img src="auth-hero-mockup.webp" alt="" class="auth-hero-mockup" width="1024" height="1536" />
+        </div>
+
         <div class="auth-box">
           <div class="logo">
             <svg class="logo-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -57,6 +65,29 @@
           </form>
 
           <p id="auth-error" class="auth-error"></p>
+        </div>
+
+        <div class="auth-hero-side auth-hero-side-right">
+          <div class="auth-hero-chip">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="5" y="11" width="14" height="9" rx="2" stroke="#34d399" stroke-width="1.6" />
+              <path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#34d399" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+            <span>Encrypted on your device — not even we can read your data</span>
+          </div>
+          <div class="auth-hero-chip">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M12 3 4 7v5c0 4.6 3.2 8.4 8 9.6 4.8-1.2 8-5 8-9.6V7l-8-4Z" stroke="#34d399" stroke-width="1.6" stroke-linejoin="round" />
+            </svg>
+            <span>Crypto, broker, PayPal, and expenses — all in one dashboard</span>
+          </div>
+          <div class="auth-hero-chip">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M20 7 9 18l-5-5" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>Free, with no account, no email, no feature paywalls</span>
+          </div>
+        </div>
         </div>
 
         <a href="#auth-about" class="auth-scroll-cue" aria-label="Scroll to learn more">

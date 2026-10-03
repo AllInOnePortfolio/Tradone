@@ -1620,6 +1620,72 @@ body.dragging-active {
   position: relative;
 }
 
+.auth-hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  width: 100%;
+  max-width: 1100px;
+}
+
+/* Hidden below the wide-screen breakpoint (see the min-width:1100px query
+   near the bottom of this file) — there's no room for a 3-column hero on
+   tablet/phone, and the About section below the fold already carries the
+   same explainer content for anyone who doesn't see this. */
+.auth-hero-side {
+  display: none;
+  flex: 1;
+  min-width: 0;
+}
+
+.auth-hero-side-left {
+  justify-content: center;
+}
+
+.auth-hero-mockup {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  height: auto;
+  margin: 0 auto;
+  filter: drop-shadow(0 24px 60px rgba(0, 0, 0, 0.55));
+}
+
+.auth-hero-side-right {
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-hero-chip {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 270px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: rgba(23, 11, 13, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #d9bcc0;
+}
+
+.auth-hero-chip svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* 380px box + 260px mockup + 270px chip column + two 48px gaps ≈ 1000px
+   needed at minimum — this leaves a bit of breathing room below that
+   rather than cutting it exactly at the wire. */
+@media (min-width: 1100px) {
+  .auth-hero-side {
+    display: flex;
+  }
+}
+
 .auth-box {
   width: 100%;
   max-width: 380px;

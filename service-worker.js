@@ -4,7 +4,7 @@
 // financial/market data from the relay (see server.js) and must always hit
 // the network, never a stale cache. Bump CACHE_NAME on every shell release
 // so returning visitors pick up the new files instead of stale cached ones.
-const CACHE_NAME = 'tradone-shell-v12';
+const CACHE_NAME = 'tradone-shell-v13';
 const SHELL_FILES = [
   './',
   './index.html',
@@ -13,7 +13,8 @@ const SHELL_FILES = [
   './app.js',
   './manifest.json',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './auth-hero-mockup.webp'
 ];
 
 self.addEventListener('install', (event) => {
