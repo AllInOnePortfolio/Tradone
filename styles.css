@@ -1601,12 +1601,23 @@ body.dragging-active {
 
 /* ── Auth gate ──────────────────────────────────────────────────── */
 
+/* The gate itself is a plain block container now — .auth-hero below is what
+   actually centers the login/signup card full-screen, same as .auth-gate
+   used to do on its own before the About/Compare sections were added below
+   it. Splitting the two lets the card keep its exact original first-screen
+   look while still allowing normal page flow (and scrolling) underneath. */
 .auth-gate {
   min-height: 100vh;
+}
+
+.auth-hero {
+  min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 20px;
+  position: relative;
 }
 
 .auth-box {
@@ -1642,6 +1653,171 @@ body.dragging-active {
   margin-top: 14px;
 }
 
+/* ── Auth gate: scroll cue + marketing sections below the fold ──── */
+
+.auth-scroll-cue {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #a8888d;
+  font-size: 0.8rem;
+  text-decoration: none;
+  animation: auth-scroll-cue-bob 2.2s ease-in-out infinite;
+}
+
+.auth-scroll-cue:hover {
+  color: #f7f1ef;
+}
+
+@keyframes auth-scroll-cue-bob {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(6px); }
+}
+
+.auth-section {
+  padding: 60px 20px;
+}
+
+.auth-section-inner {
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.auth-section-alt {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.auth-section h2 {
+  font-size: 1.7rem;
+  margin: 0 0 14px;
+  text-align: center;
+}
+
+.auth-section-lead {
+  max-width: 620px;
+  margin: 0 auto 36px;
+  color: #d9bcc0;
+  font-size: 1rem;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.auth-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.auth-feature {
+  display: flex;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(23, 11, 13, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.auth-feature svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.auth-feature div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.auth-feature strong {
+  font-size: 0.95rem;
+}
+
+.auth-feature span {
+  color: #a8888d;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.auth-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.auth-compare-card {
+  padding: 24px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.auth-compare-other {
+  background: rgba(23, 11, 13, 0.6);
+}
+
+/* The accent card — same gradient-bordered "this one's the pick" treatment
+   .expense-category-add-option/.app-nav-btn.active use elsewhere, just as a
+   border+tint here instead of a filled background so five lines of text
+   stay readable against it. */
+.auth-compare-tradone {
+  background: rgba(52, 211, 153, 0.07);
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+.auth-compare-card h3 {
+  margin: 0 0 16px;
+  font-size: 1.05rem;
+}
+
+.auth-compare-tradone h3 {
+  color: #34d399;
+}
+
+.auth-compare-card ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.auth-compare-card li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #d9bcc0;
+}
+
+.auth-compare-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.auth-compare-icon-no {
+  background: rgba(251, 113, 133, 0.14);
+  color: #fb7185;
+}
+
+.auth-compare-icon-yes {
+  background: rgba(52, 211, 153, 0.16);
+  color: #34d399;
+}
+
 /* ── Pop-in reveal ─────────────────────────────────────────────── */
 /* Applied by playPopInAnimation() in app.js — --pop-delay is set per
    element so the reveal sweeps from the page's upper-left toward its
@@ -1665,6 +1841,10 @@ body.dragging-active {
 
 @media (prefers-reduced-motion: reduce) {
   .pop-in {
+    animation: none;
+  }
+
+  .auth-scroll-cue {
     animation: none;
   }
 }
@@ -1747,6 +1927,15 @@ body.dragging-active {
     right: 12px;
     width: 36px;
     height: 36px;
+  }
+
+  .auth-feature-grid,
+  .auth-compare-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-section {
+    padding: 44px 20px;
   }
 }
 
