@@ -1655,24 +1655,39 @@ body.dragging-active {
   gap: 16px;
 }
 
-.auth-hero-chip {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  width: 270px;
-  padding: 16px 18px;
-  border-radius: 16px;
+.auth-hero-badges-card {
+  width: 290px;
+  padding: 20px;
+  border-radius: 18px;
   background: rgba(23, 11, 13, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(12px);
-  font-size: 0.85rem;
-  line-height: 1.5;
-  color: #d9bcc0;
 }
 
-.auth-hero-chip svg {
-  flex-shrink: 0;
-  margin-top: 1px;
+.auth-hero-badges-label {
+  display: block;
+  margin-bottom: 14px;
+  color: #a8888d;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.auth-hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.auth-hero-badge {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(52, 211, 153, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  color: #d9bcc0;
+  font-size: 0.8rem;
+  font-weight: 500;
 }
 
 /* .auth-box (max-width:380px, centered via .auth-hero's own flex
