@@ -1678,42 +1678,6 @@ body.dragging-active {
   line-height: 1.5;
 }
 
-.auth-hero-badges-card {
-  width: 290px;
-  max-width: 100%;
-  padding: 20px;
-  border-radius: 18px;
-  background: rgba(23, 11, 13, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(12px);
-}
-
-.auth-hero-badges-label {
-  display: block;
-  margin-bottom: 14px;
-  color: #a8888d;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.auth-hero-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.auth-hero-badge {
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(52, 211, 153, 0.08);
-  border: 1px solid rgba(52, 211, 153, 0.25);
-  color: #d9bcc0;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
 /* .auth-box (max-width:380px, centered via .auth-hero's own flex
    centering) is unaffected by either side — at this breakpoint a
    380px-wide image flush left and a 290px-wide column flush right both
