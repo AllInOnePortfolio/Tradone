@@ -1703,6 +1703,18 @@ body.dragging-active {
     width: auto;
     margin-top: 0;
   }
+
+  /* The tagline leaves normal flow here (pinned to the side instead), so
+     the cue can go back to tracking the viewport bottom directly rather
+     than following whatever's stacked above it. */
+  .auth-scroll-cue {
+    position: absolute;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 0;
+    animation-name: auth-scroll-cue-bob;
+  }
 }
 
 /* From here up there's enough room to go back to full size instead of
@@ -1760,11 +1772,18 @@ body.dragging-active {
 
 /* ── Auth gate: scroll cue + marketing sections below the fold ──── */
 
+/* Below 800px the tagline is in normal document flow (stacked under the
+   login card, see .auth-hero-side-right), so the cue has to be too —
+   pinning it absolute+bottom like the desktop version below assumes a
+   short, fixed-height block above it, which the tagline broke: with that
+   positioning the cue just sat at a fixed distance from the viewport
+   bottom regardless of how tall the stacked content actually was, and
+   the two visibly overlapped once the tagline made that content taller
+   than before. Static positioning lets it naturally follow whatever's
+   above it instead. */
 .auth-scroll-cue {
-  position: absolute;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: static;
+  margin-top: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1772,13 +1791,22 @@ body.dragging-active {
   color: #a8888d;
   font-size: 0.8rem;
   text-decoration: none;
-  animation: auth-scroll-cue-bob 2.2s ease-in-out infinite;
+  animation: auth-scroll-cue-bob-static 2.2s ease-in-out infinite;
 }
 
 .auth-scroll-cue:hover {
   color: #f7f1ef;
 }
 
+@keyframes auth-scroll-cue-bob-static {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+
+/* Only needed once the cue goes back to absolute positioning (see the
+   min-width:800px query below) — translateX(-50%) there compensates for
+   left:50%, which the static/mobile version above doesn't use at all
+   (it's already centered via .auth-hero's own flex alignment). */
 @keyframes auth-scroll-cue-bob {
   0%, 100% { transform: translateX(-50%) translateY(0); }
   50% { transform: translateX(-50%) translateY(6px); }
