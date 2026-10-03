@@ -1621,23 +1621,20 @@ body.dragging-active {
   overflow: hidden;
 }
 
-/* Pinned to the real viewport edges (absolute against .auth-hero, not
-   inset within a centered row) so the mockup actually reaches toward the
-   left border instead of floating with a wide gap around it. Hidden below
-   the wide-screen breakpoint (see the min-width:1300px query below) —
-   there's no room for this on tablet/phone, and the About section below
-   the fold already carries the same explainer content for anyone who
-   doesn't see it. */
-.auth-hero-side {
+/* Hidden entirely below the wide-screen breakpoint (see the
+   min-width:1300px query below), not just shrunk down — a phone
+   screenshot isn't very useful to someone already looking at this on
+   their phone. On a wide screen it's pinned to the real viewport edge
+   (absolute against .auth-hero, not inset within a centered row) so it
+   actually reaches toward the left border instead of floating with a
+   wide gap around it. */
+.auth-hero-side-left {
   display: none;
   position: absolute;
   top: 0;
   bottom: 0;
-  align-items: center;
-}
-
-.auth-hero-side-left {
   left: 0;
+  align-items: center;
   justify-content: flex-start;
 }
 
@@ -1648,15 +1645,42 @@ body.dragging-active {
   filter: drop-shadow(0 24px 60px rgba(0, 0, 0, 0.55));
 }
 
+/* Unlike the mockup, this stays visible at every width — stacked below
+   the login card in normal document flow on phone/tablet, then pinned to
+   the right edge the same way the mockup pins to the left once there's
+   room for a 3-column hero (see the min-width:1300px query below). */
 .auth-hero-side-right {
-  right: 32px;
+  display: flex;
   flex-direction: column;
-  justify-content: center;
+  align-items: center;
   gap: 16px;
+  width: 100%;
+  margin-top: 28px;
+}
+
+.auth-hero-tagline {
+  width: 290px;
+  max-width: 100%;
+  text-align: center;
+}
+
+.auth-hero-tagline strong {
+  display: block;
+  font-size: 1.15rem;
+  line-height: 1.35;
+  margin-bottom: 6px;
+}
+
+.auth-hero-tagline span {
+  display: block;
+  color: #a8888d;
+  font-size: 0.85rem;
+  line-height: 1.5;
 }
 
 .auth-hero-badges-card {
   width: 290px;
+  max-width: 100%;
   padding: 20px;
   border-radius: 18px;
   background: rgba(23, 11, 13, 0.7);
@@ -1691,12 +1715,23 @@ body.dragging-active {
 }
 
 /* .auth-box (max-width:380px, centered via .auth-hero's own flex
-   centering) is unaffected by these — at this breakpoint a 380px-wide
-   image flush left still leaves a comfortable gap before the centered
-   box's own edge, growing further on wider screens still. */
+   centering) is unaffected by either side — at this breakpoint a
+   380px-wide image flush left and a 290px-wide column flush right both
+   still leave a comfortable gap before the centered box's own edge,
+   growing further on wider screens still. */
 @media (min-width: 1300px) {
-  .auth-hero-side {
+  .auth-hero-side-left {
     display: flex;
+  }
+
+  .auth-hero-side-right {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 32px;
+    justify-content: center;
+    width: auto;
+    margin-top: 0;
   }
 }
 

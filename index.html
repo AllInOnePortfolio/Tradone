@@ -19,12 +19,12 @@
 
     <div id="auth-gate" class="auth-gate">
       <div class="auth-hero">
-        <!-- Pinned to the actual viewport edges (not just inset within a
-             centered row) — hidden below the wide-screen breakpoint (see
-             styles.css), since there's no room for this on tablet/phone and
-             the About section below the fold already carries the same
-             explainer content. -->
-        <div class="auth-hero-side auth-hero-side-left" aria-hidden="true">
+        <!-- Pinned to the actual viewport edge on wide screens, but hidden
+             entirely below that breakpoint (see styles.css) rather than
+             just shrunk down — a phone screenshot isn't very useful to
+             someone already looking at this on their phone, and the About
+             section below the fold covers the same ground anyway. -->
+        <div class="auth-hero-side-left" aria-hidden="true">
           <img src="auth-hero-mockup.webp" alt="" class="auth-hero-mockup" width="875" height="1336" />
         </div>
 
@@ -68,7 +68,15 @@
           <p id="auth-error" class="auth-error"></p>
         </div>
 
-        <div class="auth-hero-side auth-hero-side-right">
+        <!-- Unlike the mockup above, this stays visible on every screen size
+             (see styles.css) — just repositioned from "stacked below the
+             login card" on phone to "pinned to the right edge" on wide
+             screens, rather than disappearing on mobile. -->
+        <div class="auth-hero-side-right">
+          <div class="auth-hero-tagline">
+            <strong>No more spreadsheets for your finances.</strong>
+            <span>Track crypto, broker, and everyday spending in one place instead.</span>
+          </div>
           <div class="auth-hero-badges-card">
             <span class="auth-hero-badges-label">Works with</span>
             <div class="auth-hero-badges">
