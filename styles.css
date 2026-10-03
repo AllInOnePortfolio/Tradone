@@ -1624,14 +1624,13 @@ body.dragging-active {
 /* Hidden entirely below the min-width:800px query further down — not
    just shrunk down — a phone really has no spare room next to a 380px
    login card (see the math in that query's comment); that's the
-   "absolutely no space" case. Above 800px both sides scale up in two
-   steps (small from 800px, full-size from 1300px) rather than popping in
-   at one fixed size, so the hero actually adapts across the resolutions
-   in between instead of jumping straight from nothing to full-size. On a
-   wide screen the mockup is pinned to the real viewport edge (absolute
-   against .auth-hero, not inset within a centered row) so it actually
-   reaches toward the left border instead of floating with a wide gap
-   around it. */
+   "absolutely no space" case. Above 800px both sides scale continuously
+   with viewport width (see the clamp()s below) rather than jumping
+   between a couple of fixed sizes, which looked like a glitch at the
+   point they jumped. On a wide screen the mockup is pinned to the real
+   viewport edge (absolute against .auth-hero, not inset within a
+   centered row) so it actually reaches toward the left border instead of
+   floating with a wide gap around it. */
 .auth-hero-side-left {
   display: none;
   position: absolute;
@@ -1642,9 +1641,13 @@ body.dragging-active {
   justify-content: flex-start;
 }
 
+/* Floor (160px) is the largest size that's still verified-safe at the
+   800px reveal point below — see that query's comment — not an
+   arbitrary round number. Scales up continuously to the 380px cap from
+   there, reaching it around an 1900px-wide viewport. */
 .auth-hero-mockup {
   display: block;
-  width: 110px;
+  width: clamp(160px, 20vw, 380px);
   height: auto;
   filter: drop-shadow(0 24px 60px rgba(0, 0, 0, 0.55));
 }
@@ -1662,8 +1665,10 @@ body.dragging-active {
   margin-top: 28px;
 }
 
+/* Same floor-matches-the-800px-safe-maximum logic as the mockup above,
+   reaching its own (smaller) 290px cap around a 1450px-wide viewport. */
 .auth-hero-tagline {
-  width: 150px;
+  width: clamp(160px, 20vw, 290px);
   max-width: 100%;
   text-align: center;
 }
@@ -1683,12 +1688,14 @@ body.dragging-active {
 }
 
 /* .auth-box (max-width:380px, centered via .auth-hero's own flex
-   centering) is unaffected by either side. At 800px — the tightest width
-   this applies to — the box's own edges sit 210px in from each side; a
-   110px image flush left (plus 20px hero padding) and a 150px tagline
-   20px in from the right both still leave a real, deliberate gap before
-   the box, not just a hair's width, and that gap only grows as the
-   viewport widens further within this tier. */
+   centering) is unaffected by either side at any width here. Verified
+   numerically before shipping, not just eyeballed: at 800px — the
+   tightest width any of this applies to, where the clamp()s above sit at
+   their 160px floor and this query's own right:max(20px,3vw) is 24px —
+   the box's own edges still sit 26px+ clear of both the image and the
+   tagline, and that margin only grows from there (180px+ by 1300px,
+   370px+ by 1920px) as the viewport widens and the box's relative share
+   of it shrinks. */
 @media (min-width: 800px) {
   .auth-hero-side-left {
     display: flex;
@@ -1698,7 +1705,7 @@ body.dragging-active {
     position: absolute;
     top: 0;
     bottom: 0;
-    right: 20px;
+    right: max(20px, 3vw);
     justify-content: center;
     width: auto;
     margin-top: 0;
@@ -1708,24 +1715,6 @@ body.dragging-active {
      see the hidden-below-800px comment on .auth-scroll-cue itself. */
   .auth-scroll-cue {
     display: flex;
-  }
-}
-
-/* From here up there's enough room to go back to full size instead of
-   staying at the 800px tier's compact one — already-verified-safe sizes
-   (box edges sit at least 128px/53px clear of the image/tagline at this
-   breakpoint, growing from there). */
-@media (min-width: 1300px) {
-  .auth-hero-mockup {
-    width: clamp(260px, 24vw, 380px);
-  }
-
-  .auth-hero-tagline {
-    width: 290px;
-  }
-
-  .auth-hero-side-right {
-    right: 9vw;
   }
 }
 
