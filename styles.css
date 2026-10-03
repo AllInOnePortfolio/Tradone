@@ -1621,13 +1621,17 @@ body.dragging-active {
   overflow: hidden;
 }
 
-/* Hidden entirely below the wide-screen breakpoint (see the
-   min-width:1300px query below), not just shrunk down — a phone
-   screenshot isn't very useful to someone already looking at this on
-   their phone. On a wide screen it's pinned to the real viewport edge
-   (absolute against .auth-hero, not inset within a centered row) so it
-   actually reaches toward the left border instead of floating with a
-   wide gap around it. */
+/* Hidden entirely below the min-width:800px query further down — not
+   just shrunk down — a phone really has no spare room next to a 380px
+   login card (see the math in that query's comment); that's the
+   "absolutely no space" case. Above 800px both sides scale up in two
+   steps (small from 800px, full-size from 1300px) rather than popping in
+   at one fixed size, so the hero actually adapts across the resolutions
+   in between instead of jumping straight from nothing to full-size. On a
+   wide screen the mockup is pinned to the real viewport edge (absolute
+   against .auth-hero, not inset within a centered row) so it actually
+   reaches toward the left border instead of floating with a wide gap
+   around it. */
 .auth-hero-side-left {
   display: none;
   position: absolute;
@@ -1640,7 +1644,7 @@ body.dragging-active {
 
 .auth-hero-mockup {
   display: block;
-  width: clamp(260px, 24vw, 380px);
+  width: 110px;
   height: auto;
   filter: drop-shadow(0 24px 60px rgba(0, 0, 0, 0.55));
 }
@@ -1648,7 +1652,7 @@ body.dragging-active {
 /* Unlike the mockup, this stays visible at every width — stacked below
    the login card in normal document flow on phone/tablet, then pinned to
    the right edge the same way the mockup pins to the left once there's
-   room for a 3-column hero (see the min-width:1300px query below). */
+   room for a 3-column hero (see the min-width:800px query below). */
 .auth-hero-side-right {
   display: flex;
   flex-direction: column;
@@ -1659,7 +1663,7 @@ body.dragging-active {
 }
 
 .auth-hero-tagline {
-  width: 290px;
+  width: 150px;
   max-width: 100%;
   text-align: center;
 }
@@ -1679,11 +1683,13 @@ body.dragging-active {
 }
 
 /* .auth-box (max-width:380px, centered via .auth-hero's own flex
-   centering) is unaffected by either side — at this breakpoint a
-   380px-wide image flush left and a 290px-wide column flush right both
-   still leave a comfortable gap before the centered box's own edge,
-   growing further on wider screens still. */
-@media (min-width: 1300px) {
+   centering) is unaffected by either side. At 800px — the tightest width
+   this applies to — the box's own edges sit 210px in from each side; a
+   110px image flush left (plus 20px hero padding) and a 150px tagline
+   20px in from the right both still leave a real, deliberate gap before
+   the box, not just a hair's width, and that gap only grows as the
+   viewport widens further within this tier. */
+@media (min-width: 800px) {
   .auth-hero-side-left {
     display: flex;
   }
@@ -1692,10 +1698,28 @@ body.dragging-active {
     position: absolute;
     top: 0;
     bottom: 0;
-    right: 9vw;
+    right: 20px;
     justify-content: center;
     width: auto;
     margin-top: 0;
+  }
+}
+
+/* From here up there's enough room to go back to full size instead of
+   staying at the 800px tier's compact one — already-verified-safe sizes
+   (box edges sit at least 128px/53px clear of the image/tagline at this
+   breakpoint, growing from there). */
+@media (min-width: 1300px) {
+  .auth-hero-mockup {
+    width: clamp(260px, 24vw, 380px);
+  }
+
+  .auth-hero-tagline {
+    width: 290px;
+  }
+
+  .auth-hero-side-right {
+    right: 9vw;
   }
 }
 
