@@ -1618,42 +1618,40 @@ body.dragging-active {
   justify-content: center;
   padding: 20px;
   position: relative;
+  overflow: hidden;
 }
 
-.auth-hero-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 48px;
-  width: 100%;
-  max-width: 1100px;
-}
-
-/* Hidden below the wide-screen breakpoint (see the min-width:1100px query
-   near the bottom of this file) — there's no room for a 3-column hero on
-   tablet/phone, and the About section below the fold already carries the
-   same explainer content for anyone who doesn't see this. */
+/* Pinned to the real viewport edges (absolute against .auth-hero, not
+   inset within a centered row) so the mockup actually reaches toward the
+   left border instead of floating with a wide gap around it. Hidden below
+   the wide-screen breakpoint (see the min-width:1300px query below) —
+   there's no room for this on tablet/phone, and the About section below
+   the fold already carries the same explainer content for anyone who
+   doesn't see it. */
 .auth-hero-side {
   display: none;
-  flex: 1;
-  min-width: 0;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  align-items: center;
 }
 
 .auth-hero-side-left {
-  justify-content: center;
+  left: 0;
+  justify-content: flex-start;
 }
 
 .auth-hero-mockup {
   display: block;
-  width: 100%;
-  max-width: 260px;
+  width: clamp(260px, 24vw, 380px);
   height: auto;
-  margin: 0 auto;
   filter: drop-shadow(0 24px 60px rgba(0, 0, 0, 0.55));
 }
 
 .auth-hero-side-right {
+  right: 32px;
   flex-direction: column;
+  justify-content: center;
   gap: 16px;
 }
 
@@ -1661,7 +1659,7 @@ body.dragging-active {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  max-width: 270px;
+  width: 270px;
   padding: 16px 18px;
   border-radius: 16px;
   background: rgba(23, 11, 13, 0.7);
@@ -1677,16 +1675,19 @@ body.dragging-active {
   margin-top: 1px;
 }
 
-/* 380px box + 260px mockup + 270px chip column + two 48px gaps ≈ 1000px
-   needed at minimum — this leaves a bit of breathing room below that
-   rather than cutting it exactly at the wire. */
-@media (min-width: 1100px) {
+/* .auth-box (max-width:380px, centered via .auth-hero's own flex
+   centering) is unaffected by these — at this breakpoint a 380px-wide
+   image flush left still leaves a comfortable gap before the centered
+   box's own edge, growing further on wider screens still. */
+@media (min-width: 1300px) {
   .auth-hero-side {
     display: flex;
   }
 }
 
 .auth-box {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 380px;
   padding: 28px;

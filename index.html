@@ -19,10 +19,11 @@
 
     <div id="auth-gate" class="auth-gate">
       <div class="auth-hero">
-        <div class="auth-hero-row">
-        <!-- Hidden below the wide-screen breakpoint (see styles.css) — on
-             tablet/phone this space doesn't exist, and the About section
-             below the fold already carries the same explainer content. -->
+        <!-- Pinned to the actual viewport edges (not just inset within a
+             centered row) — hidden below the wide-screen breakpoint (see
+             styles.css), since there's no room for this on tablet/phone and
+             the About section below the fold already carries the same
+             explainer content. -->
         <div class="auth-hero-side auth-hero-side-left" aria-hidden="true">
           <img src="auth-hero-mockup.webp" alt="" class="auth-hero-mockup" width="1024" height="1536" />
         </div>
@@ -87,7 +88,6 @@
             </svg>
             <span>Free, with no account, no email, no feature paywalls</span>
           </div>
-        </div>
         </div>
 
         <a href="#auth-about" class="auth-scroll-cue" aria-label="Scroll to learn more">
