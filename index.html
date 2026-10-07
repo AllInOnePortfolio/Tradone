@@ -176,6 +176,7 @@
       <nav class="app-nav" id="app-nav">
         <button type="button" class="app-nav-btn active" data-page="portfolio" data-i18n="nav.portfolio">Portfolio</button>
         <button type="button" class="app-nav-btn" data-page="expenses" data-i18n="nav.expenses">Expenses</button>
+        <button type="button" class="app-nav-btn" data-page="budget" data-i18n="nav.budget">Budget</button>
       </nav>
 
       <button type="button" id="settings-gear-btn" class="settings-gear-btn" data-page="settings" data-i18n-title="nav.settings" data-i18n-aria-label="nav.settings" title="Settings" aria-label="Settings">
@@ -661,6 +662,103 @@
         </div>
       </section>
 
+      <section id="page-budget" class="app-page" style="display:none">
+        <div class="content-grid">
+          <aside class="panel form-panel">
+            <h2 data-i18n="budget.goalHeading">Savings goal</h2>
+            <p class="avanza-note" data-i18n="budget.goalNote">Set a target and let Tradone work out the other half — how much to save, or by when.</p>
+            <form id="budget-form" class="account-form">
+              <label>
+                <span><span data-i18n="budget.targetLabel">Target amount</span> (<span id="budget-amount-currency">USD</span>)</span>
+                <input id="budget-target-amount" type="number" step="any" min="0" placeholder="5000" required />
+              </label>
+
+              <label>
+                <span data-i18n="budget.solveForLabel">Solve for</span>
+                <div class="budget-toggle" id="budget-solve-toggle" role="group" aria-label="Solve for">
+                  <button type="button" class="budget-toggle-btn active" data-solve="byDate" data-i18n="budget.solveByDate">Required savings rate</button>
+                  <button type="button" class="budget-toggle-btn" data-solve="byRate" data-i18n="budget.solveByRate">Target date</button>
+                </div>
+              </label>
+
+              <label id="budget-deadline-field">
+                <span data-i18n="budget.deadlineLabel">Deadline</span>
+                <button type="button" id="budget-deadline-trigger" class="edit-field-date-trigger" data-date="">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2" />
+                    <path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                  <span class="edit-field-date-trigger-label">Select date</span>
+                </button>
+              </label>
+
+              <div id="budget-contribution-field" class="budget-contribution-field" style="display:none">
+                <label>
+                  <span><span data-i18n="budget.contributionLabel">Contribution</span> (<span id="budget-contribution-currency">USD</span>)</span>
+                  <input id="budget-contribution-amount" type="number" step="any" min="0" placeholder="200" />
+                </label>
+                <label>
+                  <span data-i18n="budget.perLabel">Per</span>
+                  <select id="budget-contribution-period">
+                    <option value="week" data-i18n="budget.perWeek">Week</option>
+                    <option value="month" data-i18n="budget.perMonth">Month</option>
+                  </select>
+                </label>
+              </div>
+
+              <label>
+                <span data-i18n="budget.dataSourceLabel">Where should the available savings come from?</span>
+                <div class="budget-toggle" id="budget-source-toggle" role="group" aria-label="Data source">
+                  <button type="button" class="budget-toggle-btn active" data-source="tracked" data-i18n="budget.sourceTracked">My tracked expenses</button>
+                  <button type="button" class="budget-toggle-btn" data-source="manual" data-i18n="budget.sourceManual">Enter manually</button>
+                </div>
+              </label>
+
+              <label id="budget-history-field">
+                <span data-i18n="budget.historyWindowLabel">Average over</span>
+                <select id="budget-history-window">
+                  <option value="1" data-i18n="budget.historyOneMonth">Last month</option>
+                  <option value="3" data-i18n="budget.historyThreeMonths">Last 3 months</option>
+                  <option value="6" data-i18n="budget.historySixMonths">Last 6 months</option>
+                </select>
+              </label>
+
+              <div id="budget-manual-fields" class="budget-manual-fields" style="display:none">
+                <label>
+                  <span><span data-i18n="budget.manualIncomeLabel">Weekly income</span> (<span id="budget-income-currency">USD</span>)</span>
+                  <input id="budget-manual-income" type="number" step="any" min="0" placeholder="800" />
+                </label>
+                <p class="avanza-note" data-i18n="budget.manualCategoriesNote">Weekly spend per category — leave any at 0 if it doesn't apply.</p>
+                <div id="budget-category-inputs" class="budget-category-inputs"></div>
+              </div>
+
+              <button type="submit" class="avanza-btn" data-i18n="budget.saveBtn">Save goal</button>
+            </form>
+          </aside>
+
+          <section class="panel">
+            <h2 data-i18n="budget.resultsHeading">Your plan</h2>
+            <div id="budget-empty-state" class="avanza-note" data-i18n="budget.emptyState">Set a target amount above to see your plan.</div>
+            <div id="budget-results" style="display:none">
+              <div class="stats-cards">
+                <div class="stat-card">
+                  <div class="stat-label" id="budget-primary-label" data-i18n="budget.requiredRate">Required savings</div>
+                  <div class="stat-value" id="budget-primary-value">$0</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label" data-i18n="budget.availableLabel">Available now</div>
+                  <div class="stat-value" id="budget-available-value">$0</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label" data-i18n="budget.statusLabel">Status</div>
+                  <div class="stat-value" id="budget-status-value">&mdash;</div>
+                </div>
+              </div>
+              <p id="budget-status-detail" class="avanza-note"></p>
+            </div>
+          </section>
+        </div>
+      </section>
 
       <section id="page-settings" class="app-page" style="display:none">
         <section class="panel settings-panel">

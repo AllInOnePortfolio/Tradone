@@ -44,6 +44,7 @@ const Vault = (() => {
     expenses: [],
     customExpenseCategories: [],
     hiddenExpenseCategories: [],
+    budgetGoal: null,
     avanzaSnapshot: null,
     paypalSnapshot: null,
     avanzaSession: null,
@@ -190,8 +191,36 @@ const Vault = (() => {
     }));
   }
 
+  // Clamps every numeric input to a finite, non-negative value and every
+  // enum-like field to a known option, same spirit as sanitizeExpenses above
+  // — this is real financial data a corrupted/tampered record shouldn't be
+  // able to turn into a NaN/Infinity that breaks the budget math downstream.
+  function sanitizeBudgetGoal(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const num = (v) => (Number.isFinite(v) && v >= 0 ? v : 0);
+    const categoryBudget = {};
+    if (raw.manualCategoryBudget && typeof raw.manualCategoryBudget === 'object') {
+      for (const [key, val] of Object.entries(raw.manualCategoryBudget)) {
+        if (typeof key === 'string') categoryBudget[key.slice(0, 80)] = num(val);
+      }
+    }
+    return {
+      targetAmount: num(raw.targetAmount),
+      solveMode: raw.solveMode === 'byRate' ? 'byRate' : 'byDate',
+      deadline: typeof raw.deadline === 'string' ? raw.deadline.slice(0, 10) : null,
+      contributionAmount: raw.contributionAmount == null ? null : num(raw.contributionAmount),
+      contributionPeriod: raw.contributionPeriod === 'month' ? 'month' : 'week',
+      dataSource: raw.dataSource === 'manual' ? 'manual' : 'tracked',
+      historyWindowMonths: [1, 3, 6].includes(raw.historyWindowMonths) ? raw.historyWindowMonths : 3,
+      manualIncome: raw.manualIncome == null ? null : num(raw.manualIncome),
+      manualCategoryBudget: Object.keys(categoryBudget).length ? categoryBudget : null,
+      updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : new Date().toISOString()
+    };
+  }
+
   function sanitizeField(name, value) {
     if (name === 'expenses') return sanitizeExpenses(value);
+    if (name === 'budgetGoal') return sanitizeBudgetGoal(value);
     if (Array.isArray(PROFILE_FIELDS[name])) return Array.isArray(value) ? value : [];
     return value;
   }

@@ -313,6 +313,46 @@ const TRANSLATIONS = {
     'earningCategory.investment': 'Investment income',
     'earningCategory.other': 'Other',
 
+    'nav.budget': 'Budget',
+    'budget.goalHeading': 'Savings goal',
+    'budget.goalNote': 'Set a target and let Tradone work out the other half — how much to save, or by when.',
+    'budget.targetLabel': 'Target amount',
+    'budget.solveForLabel': 'Solve for',
+    'budget.solveByDate': 'Required savings rate',
+    'budget.solveByRate': 'Target date',
+    'budget.deadlineLabel': 'Deadline',
+    'budget.contributionLabel': 'Contribution',
+    'budget.perLabel': 'Per',
+    'budget.perWeek': 'Week',
+    'budget.perMonth': 'Month',
+    'budget.dataSourceLabel': 'Where should the available savings come from?',
+    'budget.sourceTracked': 'My tracked expenses',
+    'budget.sourceManual': 'Enter manually',
+    'budget.historyWindowLabel': 'Average over',
+    'budget.historyOneMonth': 'Last month',
+    'budget.historyThreeMonths': 'Last 3 months',
+    'budget.historySixMonths': 'Last 6 months',
+    'budget.manualIncomeLabel': 'Weekly income',
+    'budget.manualCategoriesNote': 'Weekly spend per category — leave any at 0 if it doesn\'t apply.',
+    'budget.saveBtn': 'Save goal',
+    'budget.resultsHeading': 'Your plan',
+    'budget.emptyState': 'Set a target amount above to see your plan.',
+    'budget.requiredRate': 'Required savings',
+    'budget.availableLabel': 'Available now',
+    'budget.statusLabel': 'Status',
+    'budget.targetDateLabel': 'Target date',
+    'budget.statusOnTrack': 'On track',
+    'budget.statusShortfall': 'Shortfall',
+    'budget.surplusPrefix': 'Surplus of ',
+    'budget.shortfallPrefix': 'Short by ',
+    'budget.perWeekSuffix': ' / week',
+    'budget.perMonthSuffix': ' / month',
+    'budget.noHistoryNote': 'Not enough tracked history yet for this window.',
+    'budget.error.invalidAmount': 'Enter a target amount',
+    'budget.error.invalidContribution': 'Enter a contribution amount',
+    'budget.error.missingDeadline': 'Pick a deadline',
+    'budget.error.pastDeadline': 'Deadline must be in the future',
+
 
     'settings.heading': 'Display settings',
     'settings.sub': 'Controls how numbers are formatted across the whole dashboard',
@@ -575,6 +615,46 @@ const TRANSLATIONS = {
     'earningCategory.investment': 'Инвестиционный доход',
     'earningCategory.other': 'Другое',
 
+    'nav.budget': 'Бюджет',
+    'budget.goalHeading': 'Цель накоплений',
+    'budget.goalNote': 'Задайте цель, а Tradone рассчитает оставшееся — сколько откладывать или к какому сроку.',
+    'budget.targetLabel': 'Сумма цели',
+    'budget.solveForLabel': 'Рассчитать',
+    'budget.solveByDate': 'Необходимый темп накоплений',
+    'budget.solveByRate': 'Дата достижения',
+    'budget.deadlineLabel': 'Срок',
+    'budget.contributionLabel': 'Взнос',
+    'budget.perLabel': 'За',
+    'budget.perWeek': 'Неделю',
+    'budget.perMonth': 'Месяц',
+    'budget.dataSourceLabel': 'Откуда брать доступную сумму для накоплений?',
+    'budget.sourceTracked': 'Из учёта расходов',
+    'budget.sourceManual': 'Ввести вручную',
+    'budget.historyWindowLabel': 'Усреднять за',
+    'budget.historyOneMonth': 'Последний месяц',
+    'budget.historyThreeMonths': 'Последние 3 месяца',
+    'budget.historySixMonths': 'Последние 6 месяцев',
+    'budget.manualIncomeLabel': 'Доход в неделю',
+    'budget.manualCategoriesNote': 'Расходы по категориям за неделю — оставьте 0, если категория не подходит.',
+    'budget.saveBtn': 'Сохранить цель',
+    'budget.resultsHeading': 'Ваш план',
+    'budget.emptyState': 'Укажите сумму цели выше, чтобы увидеть план.',
+    'budget.requiredRate': 'Необходимые накопления',
+    'budget.availableLabel': 'Доступно сейчас',
+    'budget.statusLabel': 'Статус',
+    'budget.targetDateLabel': 'Дата достижения',
+    'budget.statusOnTrack': 'По плану',
+    'budget.statusShortfall': 'Нехватка',
+    'budget.surplusPrefix': 'Излишек: ',
+    'budget.shortfallPrefix': 'Не хватает: ',
+    'budget.perWeekSuffix': ' / нед.',
+    'budget.perMonthSuffix': ' / мес.',
+    'budget.noHistoryNote': 'Недостаточно данных учёта за этот период.',
+    'budget.error.invalidAmount': 'Укажите сумму цели',
+    'budget.error.invalidContribution': 'Укажите сумму взноса',
+    'budget.error.missingDeadline': 'Выберите срок',
+    'budget.error.pastDeadline': 'Срок должен быть в будущем',
+
 
     'settings.heading': 'Настройки отображения',
     'settings.sub': 'Определяет формат чисел во всей панели',
@@ -835,6 +915,46 @@ const TRANSLATIONS = {
     'earningCategory.refund': '退款',
     'earningCategory.investment': '投资收入',
     'earningCategory.other': '其他',
+
+    'nav.budget': '预算',
+    'budget.goalHeading': '储蓄目标',
+    'budget.goalNote': '设定目标，Tradone 会计算另一半——该存多少，或何时能达成。',
+    'budget.targetLabel': '目标金额',
+    'budget.solveForLabel': '计算目标',
+    'budget.solveByDate': '所需储蓄速度',
+    'budget.solveByRate': '目标日期',
+    'budget.deadlineLabel': '截止日期',
+    'budget.contributionLabel': '存入金额',
+    'budget.perLabel': '每',
+    'budget.perWeek': '周',
+    'budget.perMonth': '月',
+    'budget.dataSourceLabel': '可用储蓄的数据来源？',
+    'budget.sourceTracked': '使用我的支出记录',
+    'budget.sourceManual': '手动输入',
+    'budget.historyWindowLabel': '平均周期',
+    'budget.historyOneMonth': '最近一个月',
+    'budget.historyThreeMonths': '最近 3 个月',
+    'budget.historySixMonths': '最近 6 个月',
+    'budget.manualIncomeLabel': '每周收入',
+    'budget.manualCategoriesNote': '各类别每周支出——不适用的类别留 0 即可。',
+    'budget.saveBtn': '保存目标',
+    'budget.resultsHeading': '你的计划',
+    'budget.emptyState': '在上方设定目标金额以查看计划。',
+    'budget.requiredRate': '所需储蓄',
+    'budget.availableLabel': '当前可用',
+    'budget.statusLabel': '状态',
+    'budget.targetDateLabel': '目标日期',
+    'budget.statusOnTrack': '进度正常',
+    'budget.statusShortfall': '缺口',
+    'budget.surplusPrefix': '盈余 ',
+    'budget.shortfallPrefix': '缺口 ',
+    'budget.perWeekSuffix': ' /周',
+    'budget.perMonthSuffix': ' /月',
+    'budget.noHistoryNote': '该时间段的支出记录数据不足。',
+    'budget.error.invalidAmount': '请输入目标金额',
+    'budget.error.invalidContribution': '请输入存入金额',
+    'budget.error.missingDeadline': '请选择截止日期',
+    'budget.error.pastDeadline': '截止日期必须在将来',
 
 
     'settings.heading': '显示设置',
@@ -1282,6 +1402,7 @@ const appNav = document.getElementById('app-nav');
 const settingsGearBtn = document.getElementById('settings-gear-btn');
 const pagePortfolio = document.getElementById('page-portfolio');
 const pageExpenses = document.getElementById('page-expenses');
+const pageBudget = document.getElementById('page-budget');
 const pageSettings = document.getElementById('page-settings');
 
 // The gear button lives outside #app-nav (it's pinned to the page's top-right
@@ -1293,14 +1414,17 @@ function goToPage(page) {
   settingsGearBtn.classList.toggle('active', page === 'settings');
   pagePortfolio.style.display = page === 'portfolio' ? '' : 'none';
   pageExpenses.style.display = page === 'expenses' ? '' : 'none';
+  pageBudget.style.display = page === 'budget' ? '' : 'none';
   pageSettings.style.display = page === 'settings' ? '' : 'none';
   if (page === 'expenses') renderExpenses();
+  if (page === 'budget') renderBudget();
   // Same staggered entrance reveal the app plays on login, replayed for
   // whichever page just became visible — playPopInAnimation only picks up
   // elements that are actually rendered (offsetParent !== null), so it
   // naturally targets just the page now showing.
   const shownPage = page === 'portfolio' ? pagePortfolio
     : page === 'expenses' ? pageExpenses
+    : page === 'budget' ? pageBudget
     : pageSettings;
   playPopInAnimation(shownPage);
 }
@@ -3575,6 +3699,313 @@ accountsList.addEventListener('click', (event) => {
   }
 });
 
+// ── Budget optimization ─────────────────────────────────────────────────────
+// A third top-level tab: the user names a savings target and either a
+// deadline (we solve for the required rate) or a contribution rate (we solve
+// for the date), then picks where "how much can I actually save" comes from
+// — real averaged history from the Expenses tracker above, or hand-typed
+// weekly figures. Persisted as the single `budgetGoal` vault field (see
+// storage.js's PROFILE_FIELDS); unlike Expenses there's no localStorage
+// mirror, since this is one small object loaded fresh from the vault on
+// every unlock rather than something that needs to survive page reloads
+// before a vault read completes.
+let budgetGoal = null;
+
+const DEFAULT_BUDGET_GOAL = {
+  targetAmount: 0,
+  solveMode: 'byDate',
+  deadline: null,
+  contributionAmount: null,
+  contributionPeriod: 'week',
+  dataSource: 'tracked',
+  historyWindowMonths: 3,
+  manualIncome: null,
+  manualCategoryBudget: null
+};
+
+const budgetForm                   = document.getElementById('budget-form');
+const budgetTargetAmountInput      = document.getElementById('budget-target-amount');
+const budgetSolveToggle            = document.getElementById('budget-solve-toggle');
+const budgetDeadlineFieldEl        = document.getElementById('budget-deadline-field');
+const budgetDeadlineTrigger        = document.getElementById('budget-deadline-trigger');
+const budgetContributionFieldEl    = document.getElementById('budget-contribution-field');
+const budgetContributionAmountInput = document.getElementById('budget-contribution-amount');
+const budgetContributionPeriodSelect = document.getElementById('budget-contribution-period');
+const budgetSourceToggle           = document.getElementById('budget-source-toggle');
+const budgetHistoryFieldEl         = document.getElementById('budget-history-field');
+const budgetHistoryWindowSelect    = document.getElementById('budget-history-window');
+const budgetManualFieldsEl         = document.getElementById('budget-manual-fields');
+const budgetManualIncomeInput      = document.getElementById('budget-manual-income');
+const budgetCategoryInputsEl       = document.getElementById('budget-category-inputs');
+const budgetEmptyStateEl           = document.getElementById('budget-empty-state');
+const budgetResultsEl              = document.getElementById('budget-results');
+const budgetPrimaryLabelEl         = document.getElementById('budget-primary-label');
+const budgetPrimaryValueEl         = document.getElementById('budget-primary-value');
+const budgetAvailableValueEl       = document.getElementById('budget-available-value');
+const budgetStatusValueEl          = document.getElementById('budget-status-value');
+const budgetStatusDetailEl         = document.getElementById('budget-status-detail');
+const budgetAmountCurrencyEl       = document.getElementById('budget-amount-currency');
+const budgetContributionCurrencyEl = document.getElementById('budget-contribution-currency');
+const budgetIncomeCurrencyEl       = document.getElementById('budget-income-currency');
+
+// Every amount typed into this form is in the user's current display
+// currency (same convention as the Add-expense amount field) and gets
+// converted to/from USD — the currency goal/expense data is actually stored
+// in — right at the read/populate boundary (readBudgetFormValues/
+// renderBudget), so the calculation functions below only ever see USD.
+function updateBudgetCurrencyHints() {
+  budgetAmountCurrencyEl.textContent = displayCurrency;
+  budgetContributionCurrencyEl.textContent = displayCurrency;
+  budgetIncomeCurrencyEl.textContent = displayCurrency;
+}
+
+// A deadline in the past makes no sense as a savings target — same minIso
+// mechanism added to the shared date picker above (see openDatePicker/
+// renderDatePickerDayGrid), just applied here instead of a maxIso.
+budgetDeadlineTrigger.dataset.min = todayLocalISODate();
+
+// Same per-page delegated click (rather than a global document listener) as
+// pageExpenses' own date triggers above — openDatePicker/selectDatePickerDate
+// are shared, just the "which container owns this click" wiring is scoped
+// per page.
+pageBudget.addEventListener('click', (event) => {
+  const dateTrigger = event.target.closest('.edit-field-date-trigger');
+  if (dateTrigger) openDatePicker(dateTrigger);
+});
+
+enhanceSelect(budgetContributionPeriodSelect);
+enhanceSelect(budgetHistoryWindowSelect);
+
+const WEEK_DAYS = 7;
+const MONTH_DAYS = 365.2425 / 12;
+
+function weeklyToMonthly(weekly) {
+  return weekly * (MONTH_DAYS / WEEK_DAYS);
+}
+
+function normalizeToWeekly(amount, period) {
+  return period === 'month' ? amount * (WEEK_DAYS / MONTH_DAYS) : amount;
+}
+
+function addDaysIso(startIso, days) {
+  const d = parseISODateLocal(startIso);
+  d.setDate(d.getDate() + Math.round(days));
+  return toISODate(d);
+}
+
+function monthsAgoIso(months) {
+  const d = parseISODateLocal(todayLocalISODate());
+  d.setMonth(d.getMonth() - months);
+  return toISODate(d);
+}
+
+function formatWeeklyAndMonthly(weekly) {
+  return `${fmtCurrency(weekly, 'USD')}${t('budget.perWeekSuffix')} (${fmtCurrency(weeklyToMonthly(weekly), 'USD')}${t('budget.perMonthSuffix')})`;
+}
+
+// Disposable income per week, the one number both solve modes compare
+// their required rate against. Tracked mode reuses the exact same period-
+// filter/day-count helpers the Expenses stats use (isExpenseWithinPeriod/
+// expenseDayCount, both defined above) over a trailing window rather than a
+// calendar period, so it's a real recent average, not a guess. Manual mode
+// is just income minus the category figures the user typed in themselves.
+function computeAvailableWeekly(goal) {
+  if (goal.dataSource === 'manual') {
+    const income = goal.manualIncome || 0;
+    const spend = Object.values(goal.manualCategoryBudget || {}).reduce((sum, v) => sum + (Number(v) || 0), 0);
+    return { weekly: income - spend, insufficientData: false };
+  }
+  const windowMonths = goal.historyWindowMonths || 3;
+  const start = monthsAgoIso(windowMonths);
+  const end = todayLocalISODate();
+  const periodExpenses = expenses.filter((e) => isExpenseWithinPeriod(e.date, start, end));
+  if (!periodExpenses.length) return { weekly: 0, insufficientData: true };
+  const earningsSum = periodExpenses.filter((e) => e.type === 'earning').reduce((sum, e) => sum + e.amount, 0);
+  const expensesSum = periodExpenses.filter((e) => e.type === 'expense').reduce((sum, e) => sum + e.amount, 0);
+  const days = expenseDayCount(periodExpenses, start, end);
+  const weekly = days > 0 ? ((earningsSum - expensesSum) / days) * WEEK_DAYS : 0;
+  return { weekly, insufficientData: false };
+}
+
+// Solves for whichever half of the goal the user didn't fix: a deadline
+// resolves to the rate needed to hit it, a rate resolves to the date it'll
+// be hit by. Both branches also compare against availableWeekly so the
+// result panel can say whether the plan is actually realistic right now.
+function computeBudgetPlan(goal, availableWeekly) {
+  if (!(goal.targetAmount > 0)) return { error: 'invalidAmount' };
+
+  if (goal.solveMode === 'byRate') {
+    const contributionWeekly = normalizeToWeekly(goal.contributionAmount || 0, goal.contributionPeriod);
+    if (!(contributionWeekly > 0)) return { error: 'invalidContribution' };
+    const weeksNeeded = goal.targetAmount / contributionWeekly;
+    const completionDateIso = addDaysIso(todayLocalISODate(), weeksNeeded * WEEK_DAYS);
+    const deltaWeekly = availableWeekly - contributionWeekly;
+    return { mode: 'byRate', completionDateIso, contributionWeekly, feasible: deltaWeekly >= 0, deltaWeekly };
+  }
+
+  if (!goal.deadline) return { error: 'missingDeadline' };
+  const today = parseISODateLocal(todayLocalISODate());
+  const deadline = parseISODateLocal(goal.deadline);
+  if (!(deadline > today)) return { error: 'pastDeadline' };
+  const days = Math.round((deadline - today) / 86400000);
+  const weeks = days / WEEK_DAYS;
+  const requiredWeekly = goal.targetAmount / weeks;
+  const deltaWeekly = availableWeekly - requiredWeekly;
+  return { mode: 'byDate', requiredWeekly, requiredMonthly: weeklyToMonthly(requiredWeekly), feasible: deltaWeekly >= 0, deltaWeekly };
+}
+
+function setBudgetToggleActive(toggleEl, datasetKey, value) {
+  toggleEl.querySelectorAll('.budget-toggle-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset[datasetKey] === value);
+  });
+}
+
+// One number input per expense category (built-in plus this user's custom
+// ones, same categoriesForType('expense') accessor the Add-expense form
+// uses) — regenerated on every render rather than kept as static markup, so
+// a category added/renamed/hidden on the Expenses tab is reflected here too.
+function renderBudgetCategoryInputs(prefill) {
+  const cats = categoriesForType('expense');
+  budgetCategoryInputsEl.innerHTML = cats
+    .map((cat) => {
+      const usd = prefill?.[cat.value] || 0;
+      const value = usd ? convertToDisplayCurrency(usd, 'USD') : 0;
+      return `
+        <div class="budget-category-input-row">
+          <label>${categorySwatchHtml(cat)}<span>${categoryLabel(cat, 'expense')}</span></label>
+          <input type="number" step="any" min="0" data-category="${cat.value}" value="${value || ''}" />
+        </div>
+      `;
+    })
+    .join('');
+}
+
+function readBudgetFormValues() {
+  const categoryBudget = {};
+  budgetCategoryInputsEl.querySelectorAll('input[data-category]').forEach((input) => {
+    categoryBudget[input.dataset.category] = convertToUSD(Number(input.value) || 0, displayCurrency);
+  });
+  const contributionAmount = budgetContributionAmountInput.value === '' ? null : Number(budgetContributionAmountInput.value);
+  const manualIncome = budgetManualIncomeInput.value === '' ? null : Number(budgetManualIncomeInput.value);
+  return {
+    targetAmount: convertToUSD(Number(budgetTargetAmountInput.value) || 0, displayCurrency),
+    solveMode: budgetSolveToggle.querySelector('.budget-toggle-btn.active')?.dataset.solve || 'byDate',
+    deadline: budgetDeadlineTrigger.dataset.date || null,
+    contributionAmount: contributionAmount == null ? null : convertToUSD(contributionAmount, displayCurrency),
+    contributionPeriod: budgetContributionPeriodSelect.value || 'week',
+    dataSource: budgetSourceToggle.querySelector('.budget-toggle-btn.active')?.dataset.source || 'tracked',
+    historyWindowMonths: Number(budgetHistoryWindowSelect.value) || 3,
+    manualIncome: manualIncome == null ? null : convertToUSD(manualIncome, displayCurrency),
+    manualCategoryBudget: categoryBudget,
+    updatedAt: new Date().toISOString()
+  };
+}
+
+// Shared between the saved view (renderBudget, called on nav-in and right
+// after a save) and the live preview (previewBudget, called on every form
+// edit) — both just hand this whatever goal-shaped object they have at the
+// time, saved or not-yet-saved.
+function renderBudgetResults(goal) {
+  const hasGoal = goal.targetAmount > 0;
+  budgetEmptyStateEl.style.display = hasGoal ? 'none' : '';
+  budgetResultsEl.style.display = hasGoal ? '' : 'none';
+  if (!hasGoal) return;
+
+  const { weekly: availableWeekly, insufficientData } = computeAvailableWeekly(goal);
+  const plan = computeBudgetPlan(goal, availableWeekly);
+
+  budgetAvailableValueEl.textContent = formatWeeklyAndMonthly(availableWeekly);
+
+  if (plan.error) {
+    budgetPrimaryLabelEl.textContent = t('budget.requiredRate');
+    budgetPrimaryValueEl.textContent = '—';
+    budgetStatusValueEl.textContent = t(`budget.error.${plan.error}`);
+    budgetStatusValueEl.className = 'stat-value budget-status-warn';
+    budgetStatusDetailEl.textContent = '';
+    return;
+  }
+
+  if (plan.mode === 'byDate') {
+    budgetPrimaryLabelEl.textContent = t('budget.requiredRate');
+    budgetPrimaryValueEl.textContent = formatWeeklyAndMonthly(plan.requiredWeekly);
+  } else {
+    budgetPrimaryLabelEl.textContent = t('budget.targetDateLabel');
+    budgetPrimaryValueEl.textContent = formatDatePickerDisplay(plan.completionDateIso);
+  }
+
+  budgetStatusValueEl.textContent = plan.feasible ? t('budget.statusOnTrack') : t('budget.statusShortfall');
+  budgetStatusValueEl.className = `stat-value ${plan.feasible ? 'budget-status-ok' : 'budget-status-warn'}`;
+  budgetStatusDetailEl.textContent = plan.feasible
+    ? `${t('budget.surplusPrefix')}${formatWeeklyAndMonthly(plan.deltaWeekly)}`
+    : `${t('budget.shortfallPrefix')}${formatWeeklyAndMonthly(Math.abs(plan.deltaWeekly))}`;
+  if (insufficientData) budgetStatusDetailEl.textContent += ` ${t('budget.noHistoryNote')}`;
+}
+
+function previewBudget() {
+  renderBudgetResults(readBudgetFormValues());
+}
+
+// Repopulates every field from the saved budgetGoal (or the all-zero
+// default, for a user who's never set one) — called on nav-in rather than
+// kept live, same lazy-recompute rationale as Expenses (see the comment at
+// the top of goToPage above).
+function renderBudget() {
+  updateBudgetCurrencyHints();
+  const goal = budgetGoal || DEFAULT_BUDGET_GOAL;
+
+  budgetTargetAmountInput.value = goal.targetAmount ? convertToDisplayCurrency(goal.targetAmount, 'USD') : '';
+
+  setBudgetToggleActive(budgetSolveToggle, 'solve', goal.solveMode);
+  budgetDeadlineFieldEl.style.display = goal.solveMode === 'byRate' ? 'none' : '';
+  budgetContributionFieldEl.style.display = goal.solveMode === 'byRate' ? '' : 'none';
+  budgetDeadlineTrigger.dataset.date = goal.deadline || '';
+  budgetDeadlineTrigger.querySelector('.edit-field-date-trigger-label').textContent = formatDatePickerDisplay(goal.deadline || '');
+  budgetContributionAmountInput.value = goal.contributionAmount ? convertToDisplayCurrency(goal.contributionAmount, 'USD') : '';
+  budgetContributionPeriodSelect.value = goal.contributionPeriod || 'week';
+
+  setBudgetToggleActive(budgetSourceToggle, 'source', goal.dataSource);
+  budgetHistoryFieldEl.style.display = goal.dataSource === 'manual' ? 'none' : '';
+  budgetManualFieldsEl.style.display = goal.dataSource === 'manual' ? '' : 'none';
+  budgetHistoryWindowSelect.value = String(goal.historyWindowMonths || 3);
+  budgetManualIncomeInput.value = goal.manualIncome ? convertToDisplayCurrency(goal.manualIncome, 'USD') : '';
+  renderBudgetCategoryInputs(goal.manualCategoryBudget);
+
+  renderBudgetResults(goal);
+}
+
+budgetSolveToggle.addEventListener('click', (event) => {
+  const btn = event.target.closest('.budget-toggle-btn[data-solve]');
+  if (!btn) return;
+  setBudgetToggleActive(budgetSolveToggle, 'solve', btn.dataset.solve);
+  budgetDeadlineFieldEl.style.display = btn.dataset.solve === 'byRate' ? 'none' : '';
+  budgetContributionFieldEl.style.display = btn.dataset.solve === 'byRate' ? '' : 'none';
+  previewBudget();
+});
+
+budgetSourceToggle.addEventListener('click', (event) => {
+  const btn = event.target.closest('.budget-toggle-btn[data-source]');
+  if (!btn) return;
+  setBudgetToggleActive(budgetSourceToggle, 'source', btn.dataset.source);
+  budgetHistoryFieldEl.style.display = btn.dataset.source === 'manual' ? 'none' : '';
+  budgetManualFieldsEl.style.display = btn.dataset.source === 'manual' ? '' : 'none';
+  previewBudget();
+});
+
+[budgetTargetAmountInput, budgetContributionAmountInput, budgetContributionPeriodSelect, budgetHistoryWindowSelect, budgetManualIncomeInput]
+  .forEach((el) => {
+    el.addEventListener('input', previewBudget);
+    el.addEventListener('change', previewBudget);
+  });
+
+budgetCategoryInputsEl.addEventListener('input', previewBudget);
+
+budgetForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  budgetGoal = readBudgetFormValues();
+  syncProfileToServer();
+  renderBudget();
+});
+
 // ── Drag-to-reorder account cards ───────────────────────────────────────────
 // Only the small grip icon in each card's header is draggable (not the whole
 // card), so dragging never fights with clicking buttons, expanding a card, or
@@ -4565,6 +4996,7 @@ function selectDatePickerDate(iso) {
   // elements with a 'change' listener driving renderExpenses() — picking a
   // day here is this picker's equivalent of that change, for those two.
   if (trigger === expenseRangeFromTrigger || trigger === expenseRangeToTrigger) renderExpenses();
+  if (trigger === budgetDeadlineTrigger) previewBudget();
   closeDatePicker();
 }
 
@@ -4591,7 +5023,7 @@ function renderDatePicker() {
 }
 
 function renderDatePickerDayGrid() {
-  const { viewYear, viewMonth, selectedIso, maxIso, popup } = datePickerState;
+  const { viewYear, viewMonth, selectedIso, maxIso, minIso, popup } = datePickerState;
   // calendarColumnIndex/calendarWeekdayLabels (defined above, in the
   // Expenses section) apply the same Monday/Sunday week-start setting here
   // as they do to the Expenses calendar view — every date picker in the app
@@ -4605,7 +5037,7 @@ function renderDatePickerDayGrid() {
   for (let i = 0; i < firstWeekday; i++) cells += `<span class="date-picker-day date-picker-day-empty"></span>`;
   for (let day = 1; day <= daysInMonth; day++) {
     const iso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const disabled = maxIso && iso > maxIso;
+    const disabled = (maxIso && iso > maxIso) || (minIso && iso < minIso);
     const classes = ['date-picker-day'];
     if (iso === selectedIso) classes.push('selected');
     if (iso === todayIso) classes.push('today');
@@ -4745,7 +5177,7 @@ function openDatePicker(trigger) {
   });
   document.body.appendChild(popup);
 
-  datePickerState = { trigger, popup, viewYear: y, viewMonth: m - 1, selectedIso: iso, maxIso: trigger.dataset.max || null, mode: 'days' };
+  datePickerState = { trigger, popup, viewYear: y, viewMonth: m - 1, selectedIso: iso, maxIso: trigger.dataset.max || null, minIso: trigger.dataset.min || null, mode: 'days' };
   renderDatePicker();
   positionDatePicker();
   document.addEventListener('pointerdown', onDatePickerOutsideClick, true);
@@ -6236,6 +6668,7 @@ async function syncProfileToServer() {
       expenses,
       customExpenseCategories,
       hiddenExpenseCategories: [...hiddenExpenseCategories],
+      budgetGoal,
       avanzaSnapshot: avanzaSnapshotPayload,
       paypalSnapshot,
       avanzaSession,
@@ -6300,6 +6733,8 @@ async function loadProfileAndRestore() {
   saveHiddenExpenseCategories();
   renderExpenseCategoryOptions(expenseFormType);
   renderExpenses();
+  budgetGoal = profile.budgetGoal || null;
+  renderBudget();
   liveAccounts = [];
   savedWalletAddresses.clear();
   Object.keys(cryptoSources).forEach((key) => delete cryptoSources[key]);
@@ -6987,7 +7422,9 @@ const PERSISTENT_TRANSLATED_SELECTS = [
   settingsWeekStartSelect,
   paypalEnvSelect,
   newsSortWrap,
-  expenseEntriesSortSelect
+  expenseEntriesSortSelect,
+  budgetContributionPeriodSelect,
+  budgetHistoryWindowSelect
 ];
 
 function applyStaticTranslations() {

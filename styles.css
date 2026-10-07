@@ -368,6 +368,15 @@ p {
   }
 }
 
+/* The Budget page is the same two-panel shape as Expenses (a form, and a
+   results readout) so it reuses the same override rather than defining its
+   own grid-template-columns from scratch. */
+@media (min-width: 901px) {
+  #page-budget .content-grid {
+    grid-template-columns: 340px 1fr;
+  }
+}
+
 .panel {
   padding: 22px;
   border-radius: 22px;
@@ -3185,6 +3194,87 @@ body.dragging-active {
   .position-edit-btn {
     opacity: 1;
   }
+}
+
+/* ── Budget page ──────────────────────────────────────────────────── */
+/* Same two-button toggle look as .expense-type-toggle/.expense-type-btn, but
+   under its own class name since Budget's toggles (solve-for, data source)
+   aren't the expense/earning pair those were built for. */
+.budget-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.account-form .budget-toggle-btn {
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #241318;
+  color: #c2a3a8;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.budget-toggle-btn:hover:not(:disabled),
+.budget-toggle-btn:active:not(:disabled) {
+  transform: none;
+}
+
+.budget-toggle-btn.active {
+  border-color: rgba(251, 191, 36, 0.5);
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+}
+
+.budget-contribution-field,
+.budget-manual-fields {
+  display: grid;
+  gap: 14px;
+}
+
+.budget-category-inputs {
+  display: grid;
+  gap: 10px;
+}
+
+.budget-category-input-row {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  align-items: center;
+  gap: 10px;
+}
+
+.budget-category-input-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #c2a3a8;
+}
+
+/* The budget tab's two headline stat values ("$X / week ($Y / month)") run
+   noticeably longer than every other .stat-value in the app (plain numbers)
+   — .stat-value's app-wide single-line ellipsis (see styles.css above)
+   would clip them mid-word, so these two are let wrap onto a second line
+   instead rather than losing the monthly figure to truncation. */
+#budget-primary-value,
+#budget-available-value {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
+
+.budget-status-ok {
+  color: #34d399;
+}
+
+.budget-status-warn {
+  color: #fb7185;
 }
 
 /* ── Responsive ────────────────────────────────────────────────── */
