@@ -341,6 +341,9 @@ const TRANSLATIONS = {
     'budget.resultsHeadingNamed': 'Your plan for "{name}"',
     'budget.emptyState': 'Set a target amount above to see your plan.',
     'budget.targetAmountLabel': 'Target amount',
+    'budget.chartNeededLegend': 'Needed pace',
+    'budget.chartPaceLegend': 'Your current pace',
+    'budget.chartNowLabel': 'Now',
     'budget.requiredRate': 'Required savings',
     'budget.availableLabel': 'Available now',
     'budget.statusLabel': 'Status',
@@ -661,6 +664,9 @@ const TRANSLATIONS = {
     'budget.resultsHeadingNamed': 'Ваш план для «{name}»',
     'budget.emptyState': 'Укажите сумму цели выше, чтобы увидеть план.',
     'budget.targetAmountLabel': 'Сумма цели',
+    'budget.chartNeededLegend': 'Нужный темп',
+    'budget.chartPaceLegend': 'Ваш текущий темп',
+    'budget.chartNowLabel': 'Сейчас',
     'budget.requiredRate': 'Необходимые накопления',
     'budget.availableLabel': 'Доступно сейчас',
     'budget.statusLabel': 'Статус',
@@ -980,6 +986,9 @@ const TRANSLATIONS = {
     'budget.resultsHeadingNamed': '"{name}"的计划',
     'budget.emptyState': '在上方设定目标金额以查看计划。',
     'budget.targetAmountLabel': '目标金额',
+    'budget.chartNeededLegend': '所需速度',
+    'budget.chartPaceLegend': '当前速度',
+    'budget.chartNowLabel': '现在',
     'budget.requiredRate': '所需储蓄',
     'budget.availableLabel': '当前可用',
     'budget.statusLabel': '状态',
@@ -3926,6 +3935,9 @@ const budgetPrimaryValueEl         = document.getElementById('budget-primary-val
 const budgetAvailableValueEl       = document.getElementById('budget-available-value');
 const budgetStatusValueEl          = document.getElementById('budget-status-value');
 const budgetStatusDetailEl         = document.getElementById('budget-status-detail');
+const budgetChartWrapEl            = document.getElementById('budget-chart-wrap');
+const budgetChartSvgWrapEl         = document.getElementById('budget-chart-svg-wrap');
+const budgetChartTooltipEl         = document.getElementById('budget-chart-tooltip');
 const budgetAmountCurrencyEl       = document.getElementById('budget-amount-currency');
 const budgetContributionCurrencyEl = document.getElementById('budget-contribution-currency');
 const budgetIncomeCurrencyEl       = document.getElementById('budget-income-currency');
@@ -4086,6 +4098,159 @@ function readBudgetFormValues() {
   };
 }
 
+// ── Budget chart ─────────────────────────────────────────────────────────
+// Two projected lines from today: the constant rate that hits the target
+// exactly on the needed date (deadline, or computed completion date in
+// byRate mode), against a straight-line projection of the user's current
+// tracked/manual pace (availableWeekly — there's no real "amount saved so
+// far" tracked yet, see the comment on budgetGoals above, so this is a
+// projection from now, not an actual progress line). Both are plain
+// [day, amount] point lists — 2 or 3 points each, straight segments, held
+// flat once a line reaches the target (or flat at 0 for a non-positive
+// pace) rather than overshooting past it.
+function computeBudgetChartData(goal, availableWeekly, plan) {
+  const neededEndDateIso = plan.mode === 'byDate' ? goal.deadline : plan.completionDateIso;
+  const todayIso = todayLocalISODate();
+  const today = parseISODateLocal(todayIso);
+  const neededEndDate = parseISODateLocal(neededEndDateIso);
+  const neededSpanDays = Math.max(1, Math.round((neededEndDate - today) / 86400000));
+
+  const targetAmount = goal.targetAmount;
+  const paceDaysToTarget = availableWeekly > 0 ? (targetAmount / availableWeekly) * WEEK_DAYS : null;
+
+  // Lets a slower pace line visibly extend past the deadline so the gap
+  // reads clearly, capped at 2x the needed span so a near-zero pace doesn't
+  // stretch the chart out absurdly far.
+  const horizonDays = Math.max(neededSpanDays, Math.min(paceDaysToTarget ?? neededSpanDays * 2, neededSpanDays * 2));
+
+  const neededPoints = [[0, 0], [neededSpanDays, targetAmount], [horizonDays, targetAmount]];
+
+  let pacePoints;
+  if (availableWeekly <= 0) {
+    pacePoints = [[0, 0], [horizonDays, 0]];
+  } else if (paceDaysToTarget <= horizonDays) {
+    pacePoints = [[0, 0], [paceDaysToTarget, targetAmount], [horizonDays, targetAmount]];
+  } else {
+    pacePoints = [[0, 0], [horizonDays, (availableWeekly / WEEK_DAYS) * horizonDays]];
+  }
+
+  const paceEndValue = pacePoints[pacePoints.length - 1][1];
+  const yMax = Math.max(targetAmount, paceEndValue) * 1.08 || 1;
+
+  return { todayIso, neededEndDateIso, neededSpanDays, horizonDays, targetAmount, neededPoints, pacePoints, yMax };
+}
+
+// Walks a [day, amount] point list and linearly interpolates the value at
+// `day`, clamped to the list's own span — shared by the hover readout and
+// (implicitly) the polyline geometry itself, so a hovered point always
+// lands exactly on the drawn line, not just near it.
+function interpolateChartLine(points, day) {
+  const d = Math.max(0, Math.min(day, points[points.length - 1][0]));
+  for (let i = 0; i < points.length - 1; i++) {
+    const [x1, y1] = points[i];
+    const [x2, y2] = points[i + 1];
+    if (d >= x1 && d <= x2) return x2 === x1 ? y2 : y1 + (y2 - y1) * ((d - x1) / (x2 - x1));
+  }
+  return points[points.length - 1][1];
+}
+
+const BUDGET_CHART_W = 800;
+const BUDGET_CHART_H = 300;
+const BUDGET_CHART_PAD = { left: 10, right: 10, top: 24, bottom: 34 };
+const BUDGET_CHART_PLOT_W = BUDGET_CHART_W - BUDGET_CHART_PAD.left - BUDGET_CHART_PAD.right;
+const BUDGET_CHART_PLOT_H = BUDGET_CHART_H - BUDGET_CHART_PAD.top - BUDGET_CHART_PAD.bottom;
+
+// Read by the mousemove handler below (wired once, outside this function,
+// since the SVG itself is torn down and rebuilt on every render — the
+// handler always works off whatever this currently points to).
+let currentBudgetChartData = null;
+
+function renderBudgetChart(goal, availableWeekly, plan) {
+  const data = computeBudgetChartData(goal, availableWeekly, plan);
+  currentBudgetChartData = data;
+
+  const xPx = (day) => BUDGET_CHART_PAD.left + (day / data.horizonDays) * BUDGET_CHART_PLOT_W;
+  const yPx = (value) => BUDGET_CHART_PAD.top + BUDGET_CHART_PLOT_H - (value / data.yMax) * BUDGET_CHART_PLOT_H;
+
+  const neededPx = data.neededPoints.map(([d, v]) => `${xPx(d)},${yPx(v)}`).join(' ');
+  const pacePx = data.pacePoints.map(([d, v]) => `${xPx(d)},${yPx(v)}`).join(' ');
+  const targetY = yPx(data.targetAmount);
+  const deadlineX = xPx(data.neededSpanDays);
+  const showDeadlineGuide = data.horizonDays > data.neededSpanDays;
+
+  budgetChartSvgWrapEl.innerHTML = `
+    <svg viewBox="0 0 ${BUDGET_CHART_W} ${BUDGET_CHART_H}" class="budget-chart-svg" id="budget-chart-svg">
+      <line x1="${BUDGET_CHART_PAD.left}" y1="${targetY}" x2="${BUDGET_CHART_W - BUDGET_CHART_PAD.right}" y2="${targetY}" class="budget-chart-target-guide" />
+      <text x="${BUDGET_CHART_PAD.left}" y="${targetY - 8}" class="budget-chart-axis-label">${fmtCurrency(data.targetAmount, 'USD')}</text>
+      <text x="${BUDGET_CHART_PAD.left}" y="${BUDGET_CHART_H - BUDGET_CHART_PAD.bottom + 18}" class="budget-chart-axis-label">$0</text>
+      ${showDeadlineGuide ? `<line x1="${deadlineX}" y1="${BUDGET_CHART_PAD.top}" x2="${deadlineX}" y2="${BUDGET_CHART_H - BUDGET_CHART_PAD.bottom}" class="budget-chart-deadline-guide" />` : ''}
+      <polyline points="${pacePx}" class="budget-chart-line budget-chart-line-pace" />
+      <polyline points="${neededPx}" class="budget-chart-line budget-chart-line-needed" />
+      <text x="${BUDGET_CHART_PAD.left}" y="${BUDGET_CHART_H - 6}" class="budget-chart-axis-label">${t('budget.chartNowLabel')}</text>
+      <text x="${BUDGET_CHART_W - BUDGET_CHART_PAD.right}" y="${BUDGET_CHART_H - 6}" text-anchor="end" class="budget-chart-axis-label">${formatDatePickerDisplay(addDaysIso(data.todayIso, data.horizonDays))}</text>
+      <line id="budget-chart-hover-guide" class="budget-chart-hover-guide" x1="0" y1="${BUDGET_CHART_PAD.top}" x2="0" y2="${BUDGET_CHART_H - BUDGET_CHART_PAD.bottom}" style="display:none" />
+      <circle id="budget-chart-dot-needed" class="budget-chart-dot budget-chart-dot-needed" r="4" style="display:none" />
+      <circle id="budget-chart-dot-pace" class="budget-chart-dot budget-chart-dot-pace" r="4" style="display:none" />
+      <rect id="budget-chart-overlay" x="${BUDGET_CHART_PAD.left}" y="0" width="${BUDGET_CHART_PLOT_W}" height="${BUDGET_CHART_H}" fill="transparent" />
+    </svg>
+  `;
+
+  budgetChartWrapEl.style.display = '';
+}
+
+function hideBudgetChartHover() {
+  budgetChartTooltipEl.style.display = 'none';
+  const guide = budgetChartSvgWrapEl.querySelector('#budget-chart-hover-guide');
+  const dotNeeded = budgetChartSvgWrapEl.querySelector('#budget-chart-dot-needed');
+  const dotPace = budgetChartSvgWrapEl.querySelector('#budget-chart-dot-pace');
+  if (guide) guide.style.display = 'none';
+  if (dotNeeded) dotNeeded.style.display = 'none';
+  if (dotPace) dotPace.style.display = 'none';
+}
+
+// Wired once on the stable wrap element (not the SVG, which is replaced
+// wholesale on every renderBudgetChart) — reads whatever currentBudgetChartData
+// currently points to, so it stays correct across re-renders with no
+// re-wiring needed.
+budgetChartSvgWrapEl.addEventListener('mousemove', (event) => {
+  const svg = budgetChartSvgWrapEl.querySelector('#budget-chart-svg');
+  if (!currentBudgetChartData || !svg || !event.target.closest('#budget-chart-overlay')) return;
+
+  const rect = svg.getBoundingClientRect();
+  const scaleX = BUDGET_CHART_W / rect.width;
+  const viewBoxX = (event.clientX - rect.left) * scaleX;
+  const fraction = Math.max(0, Math.min(1, (viewBoxX - BUDGET_CHART_PAD.left) / BUDGET_CHART_PLOT_W));
+  const day = fraction * currentBudgetChartData.horizonDays;
+
+  const neededValue = interpolateChartLine(currentBudgetChartData.neededPoints, day);
+  const paceValue = interpolateChartLine(currentBudgetChartData.pacePoints, day);
+  const dateIso = addDaysIso(currentBudgetChartData.todayIso, day);
+  const xPx = BUDGET_CHART_PAD.left + fraction * BUDGET_CHART_PLOT_W;
+  const yPx = (value) => BUDGET_CHART_PAD.top + BUDGET_CHART_PLOT_H - (value / currentBudgetChartData.yMax) * BUDGET_CHART_PLOT_H;
+
+  const guide = budgetChartSvgWrapEl.querySelector('#budget-chart-hover-guide');
+  const dotNeeded = budgetChartSvgWrapEl.querySelector('#budget-chart-dot-needed');
+  const dotPace = budgetChartSvgWrapEl.querySelector('#budget-chart-dot-pace');
+  if (guide) { guide.setAttribute('x1', xPx); guide.setAttribute('x2', xPx); guide.style.display = ''; }
+  if (dotNeeded) { dotNeeded.setAttribute('cx', xPx); dotNeeded.setAttribute('cy', yPx(neededValue)); dotNeeded.style.display = ''; }
+  if (dotPace) { dotPace.setAttribute('cx', xPx); dotPace.setAttribute('cy', yPx(paceValue)); dotPace.style.display = ''; }
+
+  budgetChartTooltipEl.innerHTML = `
+    <div class="budget-chart-tooltip-date">${formatDatePickerDisplay(dateIso)}</div>
+    <div class="budget-chart-tooltip-row"><span class="budget-chart-legend-swatch budget-chart-legend-needed"></span>${t('budget.chartNeededLegend')}: ${fmtCurrency(neededValue, 'USD')}</div>
+    <div class="budget-chart-tooltip-row"><span class="budget-chart-legend-swatch budget-chart-legend-pace"></span>${t('budget.chartPaceLegend')}: ${fmtCurrency(paceValue, 'USD')}</div>
+  `;
+  budgetChartTooltipEl.style.display = '';
+
+  const wrapRect = budgetChartSvgWrapEl.getBoundingClientRect();
+  const left = Math.max(0, Math.min(event.clientX - wrapRect.left + 14, wrapRect.width - 190));
+  const top = Math.max(0, event.clientY - wrapRect.top - 64);
+  budgetChartTooltipEl.style.left = `${left}px`;
+  budgetChartTooltipEl.style.top = `${top}px`;
+});
+
+budgetChartSvgWrapEl.addEventListener('mouseleave', hideBudgetChartHover);
+
 // Shared between the saved view (renderBudget, called on nav-in and right
 // after a save) and the live preview (previewBudget, called on every form
 // edit) — both just hand this whatever goal-shaped object they have at the
@@ -4098,7 +4263,11 @@ function renderBudgetResults(goal) {
   const hasGoal = goal.targetAmount > 0;
   budgetEmptyStateEl.style.display = hasGoal ? 'none' : '';
   budgetResultsEl.style.display = hasGoal ? '' : 'none';
-  if (!hasGoal) return;
+  if (!hasGoal) {
+    budgetChartWrapEl.style.display = 'none';
+    currentBudgetChartData = null;
+    return;
+  }
 
   budgetTargetValueEl.textContent = fmtCurrency(goal.targetAmount, 'USD');
 
@@ -4113,6 +4282,8 @@ function renderBudgetResults(goal) {
     budgetStatusValueEl.textContent = t(`budget.error.${plan.error}`);
     budgetStatusValueEl.className = 'stat-value budget-status-warn';
     budgetStatusDetailEl.textContent = '';
+    budgetChartWrapEl.style.display = 'none';
+    currentBudgetChartData = null;
     return;
   }
 
@@ -4130,6 +4301,9 @@ function renderBudgetResults(goal) {
     ? `${t('budget.surplusPrefix')}${formatWeeklyAndMonthly(plan.deltaWeekly)}`
     : `${t('budget.shortfallPrefix')}${formatWeeklyAndMonthly(Math.abs(plan.deltaWeekly))}`;
   if (insufficientData) budgetStatusDetailEl.textContent += ` ${t('budget.noHistoryNote')}`;
+
+  hideBudgetChartHover();
+  renderBudgetChart(goal, availableWeekly, plan);
 }
 
 function previewBudget() {

@@ -3428,6 +3428,132 @@ body.dragging-active {
   background: linear-gradient(135deg, #be123c, #d97706);
 }
 
+/* ── Budget chart ─────────────────────────────────────────────────── */
+.budget-chart-wrap {
+  position: relative;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.budget-chart-legend {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 10px;
+}
+
+.budget-chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #c2a3a8;
+}
+
+.budget-chart-legend-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.budget-chart-legend-needed {
+  background: #d97706;
+}
+
+.budget-chart-legend-pace {
+  background: #34d399;
+}
+
+.budget-chart-svg-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.budget-chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: crosshair;
+}
+
+.budget-chart-line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.budget-chart-line-needed {
+  stroke: #d97706;
+}
+
+.budget-chart-line-pace {
+  stroke: #34d399;
+}
+
+.budget-chart-target-guide {
+  stroke: rgba(255, 255, 255, 0.18);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.budget-chart-deadline-guide {
+  stroke: rgba(255, 255, 255, 0.14);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+
+.budget-chart-axis-label {
+  font-size: 11px;
+  fill: #a8888d;
+}
+
+.budget-chart-hover-guide {
+  stroke: rgba(255, 255, 255, 0.3);
+  stroke-width: 1;
+}
+
+.budget-chart-dot {
+  stroke: #170b0d;
+  stroke-width: 2;
+}
+
+.budget-chart-dot-needed {
+  fill: #d97706;
+}
+
+.budget-chart-dot-pace {
+  fill: #34d399;
+}
+
+.budget-chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(23, 11, 13, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-width: 170px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  z-index: 5;
+}
+
+.budget-chart-tooltip-date {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #f7f1ef;
+  margin-bottom: 6px;
+}
+
+.budget-chart-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #c2a3a8;
+}
+
 /* ── Responsive ────────────────────────────────────────────────── */
 
 @media (max-width: 900px) {
