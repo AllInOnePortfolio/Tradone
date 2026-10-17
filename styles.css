@@ -3462,12 +3462,17 @@ body.dragging-active {
 }
 
 .budget-chart-legend-pace {
-  background: #34d399;
+  background: #fbbf24;
 }
 
+/* A dark-red card of its own, same family as .panel/.stat-card
+   (rgba(24,12,14,...)/#1c0f12) rather than just bleeding edge-to-edge into
+   the results panel behind it — gives the chart a contained canvas. */
 .budget-chart-svg-wrap {
   position: relative;
   width: 100%;
+  background: rgba(28, 13, 15, 0.6);
+  border-radius: 16px;
 }
 
 .budget-chart-svg {
@@ -3489,28 +3494,28 @@ body.dragging-active {
 }
 
 .budget-chart-line-pace {
-  stroke: #34d399;
+  stroke: #fbbf24;
 }
 
 .budget-chart-target-guide {
-  stroke: rgba(255, 255, 255, 0.18);
+  stroke: rgba(217, 119, 6, 0.3);
   stroke-width: 1;
   stroke-dasharray: 4 4;
 }
 
 .budget-chart-deadline-guide {
-  stroke: rgba(255, 255, 255, 0.14);
+  stroke: rgba(217, 119, 6, 0.22);
   stroke-width: 1;
   stroke-dasharray: 3 5;
 }
 
 .budget-chart-axis-label {
   font-size: 11px;
-  fill: #a8888d;
+  fill: #d9a066;
 }
 
 .budget-chart-hover-guide {
-  stroke: rgba(255, 255, 255, 0.3);
+  stroke: rgba(251, 191, 36, 0.45);
   stroke-width: 1;
 }
 
@@ -3524,7 +3529,7 @@ body.dragging-active {
 }
 
 .budget-chart-dot-pace {
-  fill: #34d399;
+  fill: #fbbf24;
 }
 
 .budget-chart-tooltip {
