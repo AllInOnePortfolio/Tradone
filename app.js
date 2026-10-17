@@ -4155,10 +4155,17 @@ function interpolateChartLine(points, day) {
 }
 
 const BUDGET_CHART_W = 800;
-const BUDGET_CHART_H = 300;
-const BUDGET_CHART_PAD = { left: 10, right: 10, top: 24, bottom: 34 };
+const BUDGET_CHART_H = 260;
+// Left padding is wide enough to hold a currency-formatted Y-axis label
+// (e.g. "$2,000.00") sitting outside the plot area, right-aligned against
+// the axis line rather than overlapping the chart itself.
+const BUDGET_CHART_PAD = { left: 64, right: 14, top: 24, bottom: 34 };
 const BUDGET_CHART_PLOT_W = BUDGET_CHART_W - BUDGET_CHART_PAD.left - BUDGET_CHART_PAD.right;
 const BUDGET_CHART_PLOT_H = BUDGET_CHART_H - BUDGET_CHART_PAD.top - BUDGET_CHART_PAD.bottom;
+// A handful of reference points rather than one per day/week — "some
+// measures," not a dense grid. 0/half/full covers the chart's whole span
+// on each axis in three readable marks.
+const BUDGET_CHART_TICK_FRACTIONS = [0, 0.5, 1];
 
 // Read by the mousemove handler below (wired once, outside this function,
 // since the SVG itself is torn down and rebuilt on every render — the
@@ -4171,6 +4178,7 @@ function renderBudgetChart(goal, availableWeekly, plan) {
 
   const xPx = (day) => BUDGET_CHART_PAD.left + (day / data.horizonDays) * BUDGET_CHART_PLOT_W;
   const yPx = (value) => BUDGET_CHART_PAD.top + BUDGET_CHART_PLOT_H - (value / data.yMax) * BUDGET_CHART_PLOT_H;
+  const axisBottom = BUDGET_CHART_H - BUDGET_CHART_PAD.bottom;
 
   const neededPx = data.neededPoints.map(([d, v]) => `${xPx(d)},${yPx(v)}`).join(' ');
   const pacePx = data.pacePoints.map(([d, v]) => `${xPx(d)},${yPx(v)}`).join(' ');
@@ -4178,19 +4186,40 @@ function renderBudgetChart(goal, availableWeekly, plan) {
   const deadlineX = xPx(data.neededSpanDays);
   const showDeadlineGuide = data.horizonDays > data.neededSpanDays;
 
+  const yTicks = BUDGET_CHART_TICK_FRACTIONS.map((f) => {
+    const value = data.yMax * f;
+    const y = yPx(value);
+    return `
+      <line x1="${BUDGET_CHART_PAD.left - 5}" y1="${y}" x2="${BUDGET_CHART_PAD.left}" y2="${y}" class="budget-chart-tick" />
+      <text x="${BUDGET_CHART_PAD.left - 9}" y="${y + 3}" text-anchor="end" class="budget-chart-axis-label">${fmtCurrency(value, 'USD')}</text>
+    `;
+  }).join('');
+
+  const xTicks = BUDGET_CHART_TICK_FRACTIONS.map((f) => {
+    const day = data.horizonDays * f;
+    const x = xPx(day);
+    const anchor = f === 0 ? 'start' : f === 1 ? 'end' : 'middle';
+    const label = f === 0 ? t('budget.chartNowLabel') : formatDatePickerDisplay(addDaysIso(data.todayIso, day));
+    return `
+      <line x1="${x}" y1="${axisBottom}" x2="${x}" y2="${axisBottom + 5}" class="budget-chart-tick" />
+      <text x="${x}" y="${BUDGET_CHART_H - 6}" text-anchor="${anchor}" class="budget-chart-axis-label">${label}</text>
+    `;
+  }).join('');
+
   budgetChartSvgWrapEl.innerHTML = `
     <svg viewBox="0 0 ${BUDGET_CHART_W} ${BUDGET_CHART_H}" class="budget-chart-svg" id="budget-chart-svg">
       <line x1="${BUDGET_CHART_PAD.left}" y1="${targetY}" x2="${BUDGET_CHART_W - BUDGET_CHART_PAD.right}" y2="${targetY}" class="budget-chart-target-guide" />
-      <text x="${BUDGET_CHART_PAD.left}" y="${targetY - 8}" class="budget-chart-axis-label">${fmtCurrency(data.targetAmount, 'USD')}</text>
-      <text x="${BUDGET_CHART_PAD.left}" y="${BUDGET_CHART_H - BUDGET_CHART_PAD.bottom + 18}" class="budget-chart-axis-label">$0</text>
-      ${showDeadlineGuide ? `<line x1="${deadlineX}" y1="${BUDGET_CHART_PAD.top}" x2="${deadlineX}" y2="${BUDGET_CHART_H - BUDGET_CHART_PAD.bottom}" class="budget-chart-deadline-guide" />` : ''}
+      <text x="${BUDGET_CHART_PAD.left + 6}" y="${targetY - 8}" class="budget-chart-axis-label budget-chart-target-label">${fmtCurrency(data.targetAmount, 'USD')}</text>
+      ${showDeadlineGuide ? `<line x1="${deadlineX}" y1="${BUDGET_CHART_PAD.top}" x2="${deadlineX}" y2="${axisBottom}" class="budget-chart-deadline-guide" />` : ''}
       <polyline points="${pacePx}" class="budget-chart-line budget-chart-line-pace" />
       <polyline points="${neededPx}" class="budget-chart-line budget-chart-line-needed" />
-      <text x="${BUDGET_CHART_PAD.left}" y="${BUDGET_CHART_H - 6}" class="budget-chart-axis-label">${t('budget.chartNowLabel')}</text>
-      <text x="${BUDGET_CHART_W - BUDGET_CHART_PAD.right}" y="${BUDGET_CHART_H - 6}" text-anchor="end" class="budget-chart-axis-label">${formatDatePickerDisplay(addDaysIso(data.todayIso, data.horizonDays))}</text>
-      <line id="budget-chart-hover-guide" class="budget-chart-hover-guide" x1="0" y1="${BUDGET_CHART_PAD.top}" x2="0" y2="${BUDGET_CHART_H - BUDGET_CHART_PAD.bottom}" style="display:none" />
-      <circle id="budget-chart-dot-needed" class="budget-chart-dot budget-chart-dot-needed" r="4" style="display:none" />
-      <circle id="budget-chart-dot-pace" class="budget-chart-dot budget-chart-dot-pace" r="4" style="display:none" />
+      <line x1="${BUDGET_CHART_PAD.left}" y1="${BUDGET_CHART_PAD.top}" x2="${BUDGET_CHART_PAD.left}" y2="${axisBottom}" class="budget-chart-axis-line" />
+      <line x1="${BUDGET_CHART_PAD.left}" y1="${axisBottom}" x2="${BUDGET_CHART_W - BUDGET_CHART_PAD.right}" y2="${axisBottom}" class="budget-chart-axis-line" />
+      ${yTicks}
+      ${xTicks}
+      <line id="budget-chart-hover-guide" class="budget-chart-hover-guide" x1="0" y1="${BUDGET_CHART_PAD.top}" x2="0" y2="${axisBottom}" style="display:none" />
+      <circle id="budget-chart-dot-needed" class="budget-chart-dot budget-chart-dot-needed" r="3.5" style="display:none" />
+      <circle id="budget-chart-dot-pace" class="budget-chart-dot budget-chart-dot-pace" r="3.5" style="display:none" />
       <rect id="budget-chart-overlay" x="${BUDGET_CHART_PAD.left}" y="0" width="${BUDGET_CHART_PLOT_W}" height="${BUDGET_CHART_H}" fill="transparent" />
     </svg>
   `;

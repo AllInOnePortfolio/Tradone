@@ -3484,17 +3484,21 @@ body.dragging-active {
 
 .budget-chart-line {
   fill: none;
-  stroke-width: 3;
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
+/* Needed is a definite, fixed-rate plan — solid. Current pace is an
+   extrapolation from recent averages, not a certainty — dashed, so the two
+   read as "the target" vs "a projection" at a glance, not just two colors. */
 .budget-chart-line-needed {
   stroke: #d97706;
 }
 
 .budget-chart-line-pace {
   stroke: #fbbf24;
+  stroke-dasharray: 7 5;
 }
 
 .budget-chart-target-guide {
@@ -3509,9 +3513,23 @@ body.dragging-active {
   stroke-dasharray: 3 5;
 }
 
+.budget-chart-axis-line {
+  stroke: rgba(217, 119, 6, 0.4);
+  stroke-width: 1;
+}
+
+.budget-chart-tick {
+  stroke: rgba(217, 119, 6, 0.4);
+  stroke-width: 1;
+}
+
 .budget-chart-axis-label {
   font-size: 11px;
   fill: #d9a066;
+}
+
+.budget-chart-target-label {
+  font-weight: 700;
 }
 
 .budget-chart-hover-guide {
