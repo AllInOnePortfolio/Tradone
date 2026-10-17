@@ -369,11 +369,25 @@ p {
 }
 
 /* The Budget page is the same two-panel shape as Expenses (a form, and a
-   results readout) so it reuses the same override rather than defining its
-   own grid-template-columns from scratch. */
+   results readout) so it reuses the same column split — but unlike
+   Expenses/Portfolio there's nothing else on this page below the panels, so
+   leaving .content-grid's inherited align-items: start would size both
+   panels to their own short content and strand a tall block of empty space
+   underneath on anything but a very short viewport. Stretching them to a
+   viewport-relative min-height instead makes the two boxes actually fill
+   the tab. The 260px subtracted is the nav row + page padding above them
+   (see .app-shell's own padding/.app-nav's margin-bottom) — not pixel-exact
+   on every viewport, just enough that the panels read as filling the
+   screen rather than floating in the middle of it. */
 @media (min-width: 901px) {
   #page-budget .content-grid {
     grid-template-columns: 340px 1fr;
+    align-items: stretch;
+    min-height: calc(100vh - 260px);
+  }
+
+  #page-budget .panel {
+    height: 100%;
   }
 }
 

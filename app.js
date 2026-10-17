@@ -4633,16 +4633,16 @@ render();
     // (see the responsive rules at the bottom of styles.css) — matching
     // heights there would just force pointless scrollbars on stacked panels.
     if (window.innerWidth <= 900) {
-      formPanelEl.style.height = '';
-      newsPanelEl.style.height = '';
+      formPanelEl.style.minHeight = '';
+      newsPanelEl.style.minHeight = '';
       newsListEl.style.maxHeight = '';
       return;
     }
 
     // Clear any previously-applied sizing first so the measurements below
     // reflect natural content, not a stale constraint from the last sync.
-    formPanelEl.style.height = '';
-    newsPanelEl.style.height = '';
+    formPanelEl.style.minHeight = '';
+    newsPanelEl.style.minHeight = '';
     newsListEl.style.maxHeight = '';
 
     const target = accountsPanelEl.offsetHeight;
@@ -4651,8 +4651,16 @@ render();
     // allowance gets capped, keeping the heading always visible.
     const newsChrome = newsPanelEl.offsetHeight - newsListEl.offsetHeight;
 
-    formPanelEl.style.height = `${target}px`;
-    newsPanelEl.style.height = `${target}px`;
+    // min-height, not height: this is a floor that matches the accounts
+    // panel in the common case, not a ceiling. A fixed height clipped
+    // whichever panel's own content — an expanded Avanza BankID/crypto
+    // subsection in the form, a tall news heading — ran taller than target,
+    // since .panel has no overflow rule to hide or scroll the excess (see
+    // styles.css). min-height still closes the gap when content is shorter,
+    // but lets a panel grow past target instead of spilling past its edge
+    // when it's taller.
+    formPanelEl.style.minHeight = `${target}px`;
+    newsPanelEl.style.minHeight = `${target}px`;
     newsListEl.style.maxHeight = `${Math.max(target - newsChrome, 80)}px`;
   }
 
