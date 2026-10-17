@@ -267,6 +267,8 @@ const TRANSLATIONS = {
     'expenses.importEmpty': "Couldn't find any valid rows in that file.",
     'expenses.importError': "Couldn't read that file — make sure it's a CSV exported from here (or in the same format).",
     'expenses.importDone': '{count} entries imported.',
+    'expenses.importDuplicatesSkipped': '{count} already in your data — skipped.',
+    'expenses.importAllDuplicates': 'Every row in that file is already in your data — nothing new to import.',
     'expenses.spendingOverviewHeading': 'Spending overview',
     'expenses.viewList': 'List',
     'expenses.viewWheel': 'Wheel',
@@ -569,6 +571,8 @@ const TRANSLATIONS = {
     'expenses.importEmpty': 'В этом файле не найдено ни одной подходящей строки.',
     'expenses.importError': 'Не удалось прочитать файл — убедитесь, что это CSV, экспортированный отсюда (или в том же формате).',
     'expenses.importDone': 'Импортировано записей: {count}.',
+    'expenses.importDuplicatesSkipped': 'Уже есть в данных: {count} — пропущено.',
+    'expenses.importAllDuplicates': 'Все строки этого файла уже есть в данных — импортировать нечего.',
     'expenses.spendingOverviewHeading': 'Обзор расходов',
     'expenses.viewList': 'Список',
     'expenses.viewWheel': 'Круговая',
@@ -870,6 +874,8 @@ const TRANSLATIONS = {
     'expenses.importEmpty': '该文件中没有找到有效的记录行。',
     'expenses.importError': '无法读取该文件 —— 请确认它是从本应用导出的 CSV（或相同格式）。',
     'expenses.importDone': '已导入 {count} 条记录。',
+    'expenses.importDuplicatesSkipped': '{count} 条已存在于数据中 —— 已跳过。',
+    'expenses.importAllDuplicates': '该文件中的记录已全部存在于数据中 —— 没有可导入的新记录。',
     'expenses.spendingOverviewHeading': '支出概览',
     'expenses.viewList': '列表',
     'expenses.viewWheel': '饼图',
@@ -2613,6 +2619,15 @@ function resolveImportCategory(type, labelText) {
   return id;
 }
 
+// Same transaction imported twice — e.g. re-importing an old CSV, or a CSV
+// that overlaps data already brought in from another device — reads as
+// identical date + type + description + amount. Rounding the amount to
+// whole cents avoids two entries that are "the same" by eye (45 vs
+// 45.00000000000001) comparing unequal purely from float drift.
+function expenseDedupeKey(date, type, description, amount) {
+  return `${date}|${type}|${(description || '').trim().toLowerCase()}|${Math.round(amount * 100)}`;
+}
+
 // Wires the Export/Import CSV widget on the Settings page (see index.html —
 // deliberately only offered there, not on the Everyday Expenses page itself,
 // so backup/restore lives in one place rather than two).
@@ -2672,13 +2687,37 @@ function setupExpenseCsvIO() {
           return;
         }
 
-        pendingImportEntries = parsed;
-        const expenseCount = parsed.filter((p) => p.type === 'expense').length;
-        const earningCount = parsed.length - expenseCount;
+        // Skip any row that's a duplicate of an entry already on this
+        // device — matched on date + type + description + amount, not just
+        // appended blindly (see expenseDedupeKey above). Also tracks newly
+        // deduped rows against each other, so two identical rows within the
+        // same file don't both get through on a device that has neither yet.
+        const seenKeys = new Set(expenses.map((e) => expenseDedupeKey(e.date, e.type, e.description, e.amount)));
+        const deduped = [];
+        let duplicateCount = 0;
+        for (const p of parsed) {
+          const key = expenseDedupeKey(p.date, p.type, p.description, p.amount);
+          if (seenKeys.has(key)) {
+            duplicateCount++;
+            continue;
+          }
+          seenKeys.add(key);
+          deduped.push(p);
+        }
+
+        if (!deduped.length) {
+          alert(t('expenses.importAllDuplicates'));
+          return;
+        }
+
+        pendingImportEntries = deduped;
+        const expenseCount = deduped.filter((p) => p.type === 'expense').length;
+        const earningCount = deduped.length - expenseCount;
         importSummaryEl.textContent = t('expenses.importSummary')
-          .replace('{count}', parsed.length)
+          .replace('{count}', deduped.length)
           .replace('{expenseCount}', expenseCount)
-          .replace('{earningCount}', earningCount);
+          .replace('{earningCount}', earningCount)
+          + (duplicateCount ? ` ${t('expenses.importDuplicatesSkipped').replace('{count}', duplicateCount)}` : '');
         renderImportAccountOptions();
         importReview.style.display = '';
       } catch {
