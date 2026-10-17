@@ -4107,23 +4107,23 @@ function readBudgetFormValues() {
 // projection from now, not an actual progress line). Both are plain
 // [day, amount] point lists — 2 or 3 points each, straight segments, held
 // flat once a line reaches the target (or flat at 0 for a non-positive
-// pace) rather than overshooting past it.
+// pace) rather than overshooting past it. The chart's X range always ends
+// exactly at the needed date — it doesn't extend further to chase a slower
+// pace line to its own completion, so a goal's whole plan always fills the
+// full width at full resolution instead of being squeezed into a fraction
+// of a stretched-out chart.
 function computeBudgetChartData(goal, availableWeekly, plan) {
   const neededEndDateIso = plan.mode === 'byDate' ? goal.deadline : plan.completionDateIso;
   const todayIso = todayLocalISODate();
   const today = parseISODateLocal(todayIso);
   const neededEndDate = parseISODateLocal(neededEndDateIso);
   const neededSpanDays = Math.max(1, Math.round((neededEndDate - today) / 86400000));
+  const horizonDays = neededSpanDays;
 
   const targetAmount = goal.targetAmount;
   const paceDaysToTarget = availableWeekly > 0 ? (targetAmount / availableWeekly) * WEEK_DAYS : null;
 
-  // Lets a slower pace line visibly extend past the deadline so the gap
-  // reads clearly, capped at 2x the needed span so a near-zero pace doesn't
-  // stretch the chart out absurdly far.
-  const horizonDays = Math.max(neededSpanDays, Math.min(paceDaysToTarget ?? neededSpanDays * 2, neededSpanDays * 2));
-
-  const neededPoints = [[0, 0], [neededSpanDays, targetAmount], [horizonDays, targetAmount]];
+  const neededPoints = [[0, 0], [neededSpanDays, targetAmount]];
 
   let pacePoints;
   if (availableWeekly <= 0) {
@@ -4135,9 +4135,31 @@ function computeBudgetChartData(goal, availableWeekly, plan) {
   }
 
   const paceEndValue = pacePoints[pacePoints.length - 1][1];
-  const yMax = Math.max(targetAmount, paceEndValue) * 1.08 || 1;
+  const yMax = niceAxisMax(Math.max(targetAmount, paceEndValue) || 1);
 
   return { todayIso, neededEndDateIso, neededSpanDays, horizonDays, targetAmount, neededPoints, pacePoints, yMax };
+}
+
+// Standard "nice numbers" rounding (Heckbert's algorithm) — turns an exact
+// max like $1,857.71 into a round $2,000, so axis ticks land on amounts a
+// person would actually write down instead of arbitrary fractions of
+// whatever the data happens to be.
+function niceAxisMax(roughMax) {
+  const exponent = Math.floor(Math.log10(roughMax));
+  const fraction = roughMax / 10 ** exponent;
+  const niceFraction = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 5 ? 5 : 10;
+  return niceFraction * 10 ** exponent;
+}
+
+// Picks a round day-count step (a week, a couple of weeks, a month, a
+// quarter, ...) closest to the chart's span divided into ~5 parts, so X-axis
+// ticks land on "rounded" dates rather than exact fractions of an odd
+// day-count span — the "weeks or months depending on total goal time
+// period" idea applies here, to the axis, rather than the hover readout
+// (which stays exact).
+const BUDGET_CHART_NICE_DAY_STEPS = [1, 2, 3, 5, 7, 14, 21, 30, 45, 60, 90, 120, 180, 270, 365, 545, 730];
+function niceDayStep(rawStep) {
+  return BUDGET_CHART_NICE_DAY_STEPS.reduce((best, s) => (Math.abs(s - rawStep) < Math.abs(best - rawStep) ? s : best));
 }
 
 // Walks a [day, amount] point list and linearly interpolates the value at
@@ -4162,10 +4184,18 @@ const BUDGET_CHART_H = 260;
 const BUDGET_CHART_PAD = { left: 64, right: 14, top: 24, bottom: 34 };
 const BUDGET_CHART_PLOT_W = BUDGET_CHART_W - BUDGET_CHART_PAD.left - BUDGET_CHART_PAD.right;
 const BUDGET_CHART_PLOT_H = BUDGET_CHART_H - BUDGET_CHART_PAD.top - BUDGET_CHART_PAD.bottom;
-// A handful of reference points rather than one per day/week — "some
-// measures," not a dense grid. 0/half/full covers the chart's whole span
-// on each axis in three readable marks.
-const BUDGET_CHART_TICK_FRACTIONS = [0, 0.5, 1];
+
+// A handful of rounded reference points rather than one per day/week — "some
+// measures," not a dense grid — landing on round numbers (niceAxisMax/
+// niceDayStep above) instead of exact fractions of whatever the data
+// happens to be. Always includes the axis's own max as the last tick even
+// if the step doesn't divide into it evenly.
+function buildAxisTicks(maxValue, step) {
+  const ticks = [];
+  for (let v = 0; v <= maxValue + step * 0.001; v += step) ticks.push(v);
+  if (ticks[ticks.length - 1] < maxValue - step * 0.3) ticks.push(maxValue);
+  return ticks;
+}
 
 // Read by the mousemove handler below (wired once, outside this function,
 // since the SVG itself is torn down and rebuilt on every render — the
@@ -4183,11 +4213,10 @@ function renderBudgetChart(goal, availableWeekly, plan) {
   const neededPx = data.neededPoints.map(([d, v]) => `${xPx(d)},${yPx(v)}`).join(' ');
   const pacePx = data.pacePoints.map(([d, v]) => `${xPx(d)},${yPx(v)}`).join(' ');
   const targetY = yPx(data.targetAmount);
-  const deadlineX = xPx(data.neededSpanDays);
-  const showDeadlineGuide = data.horizonDays > data.neededSpanDays;
 
-  const yTicks = BUDGET_CHART_TICK_FRACTIONS.map((f) => {
-    const value = data.yMax * f;
+  const yStep = niceAxisMax(data.yMax / 4);
+  const yTickValues = buildAxisTicks(data.yMax, yStep);
+  const yTicks = yTickValues.map((value) => {
     const y = yPx(value);
     return `
       <line x1="${BUDGET_CHART_PAD.left - 5}" y1="${y}" x2="${BUDGET_CHART_PAD.left}" y2="${y}" class="budget-chart-tick" />
@@ -4195,11 +4224,14 @@ function renderBudgetChart(goal, availableWeekly, plan) {
     `;
   }).join('');
 
-  const xTicks = BUDGET_CHART_TICK_FRACTIONS.map((f) => {
-    const day = data.horizonDays * f;
+  const xStep = niceDayStep(data.horizonDays / 4);
+  const xTickDays = buildAxisTicks(data.horizonDays, xStep);
+  const xTicks = xTickDays.map((day) => {
     const x = xPx(day);
-    const anchor = f === 0 ? 'start' : f === 1 ? 'end' : 'middle';
-    const label = f === 0 ? t('budget.chartNowLabel') : formatDatePickerDisplay(addDaysIso(data.todayIso, day));
+    const isFirst = day === xTickDays[0];
+    const isLast = day === xTickDays[xTickDays.length - 1];
+    const anchor = isFirst ? 'start' : isLast ? 'end' : 'middle';
+    const label = isFirst ? t('budget.chartNowLabel') : formatDatePickerDisplay(addDaysIso(data.todayIso, day));
     return `
       <line x1="${x}" y1="${axisBottom}" x2="${x}" y2="${axisBottom + 5}" class="budget-chart-tick" />
       <text x="${x}" y="${BUDGET_CHART_H - 6}" text-anchor="${anchor}" class="budget-chart-axis-label">${label}</text>
@@ -4210,7 +4242,6 @@ function renderBudgetChart(goal, availableWeekly, plan) {
     <svg viewBox="0 0 ${BUDGET_CHART_W} ${BUDGET_CHART_H}" class="budget-chart-svg" id="budget-chart-svg">
       <line x1="${BUDGET_CHART_PAD.left}" y1="${targetY}" x2="${BUDGET_CHART_W - BUDGET_CHART_PAD.right}" y2="${targetY}" class="budget-chart-target-guide" />
       <text x="${BUDGET_CHART_PAD.left + 6}" y="${targetY - 8}" class="budget-chart-axis-label budget-chart-target-label">${fmtCurrency(data.targetAmount, 'USD')}</text>
-      ${showDeadlineGuide ? `<line x1="${deadlineX}" y1="${BUDGET_CHART_PAD.top}" x2="${deadlineX}" y2="${axisBottom}" class="budget-chart-deadline-guide" />` : ''}
       <polyline points="${pacePx}" class="budget-chart-line budget-chart-line-pace" />
       <polyline points="${neededPx}" class="budget-chart-line budget-chart-line-needed" />
       <line x1="${BUDGET_CHART_PAD.left}" y1="${BUDGET_CHART_PAD.top}" x2="${BUDGET_CHART_PAD.left}" y2="${axisBottom}" class="budget-chart-axis-line" />

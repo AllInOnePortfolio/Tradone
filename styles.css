@@ -3484,7 +3484,7 @@ body.dragging-active {
 
 .budget-chart-line {
   fill: none;
-  stroke-width: 2;
+  stroke-width: 1.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -3507,20 +3507,14 @@ body.dragging-active {
   stroke-dasharray: 4 4;
 }
 
-.budget-chart-deadline-guide {
-  stroke: rgba(217, 119, 6, 0.22);
-  stroke-width: 1;
-  stroke-dasharray: 3 5;
-}
-
 .budget-chart-axis-line {
-  stroke: rgba(217, 119, 6, 0.4);
-  stroke-width: 1;
+  stroke: rgba(217, 119, 6, 0.65);
+  stroke-width: 2;
 }
 
 .budget-chart-tick {
-  stroke: rgba(217, 119, 6, 0.4);
-  stroke-width: 1;
+  stroke: rgba(217, 119, 6, 0.65);
+  stroke-width: 1.5;
 }
 
 .budget-chart-axis-label {
