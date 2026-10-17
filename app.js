@@ -338,7 +338,9 @@ const TRANSLATIONS = {
     'budget.manualCategoriesNote': 'Weekly spend per category — leave any at 0 if it doesn\'t apply.',
     'budget.saveBtn': 'Save goal',
     'budget.resultsHeading': 'Your plan',
+    'budget.resultsHeadingNamed': 'Your plan for "{name}"',
     'budget.emptyState': 'Set a target amount above to see your plan.',
+    'budget.targetAmountLabel': 'Target amount',
     'budget.requiredRate': 'Required savings',
     'budget.availableLabel': 'Available now',
     'budget.statusLabel': 'Status',
@@ -656,7 +658,9 @@ const TRANSLATIONS = {
     'budget.manualCategoriesNote': 'Расходы по категориям за неделю — оставьте 0, если категория не подходит.',
     'budget.saveBtn': 'Сохранить цель',
     'budget.resultsHeading': 'Ваш план',
+    'budget.resultsHeadingNamed': 'Ваш план для «{name}»',
     'budget.emptyState': 'Укажите сумму цели выше, чтобы увидеть план.',
+    'budget.targetAmountLabel': 'Сумма цели',
     'budget.requiredRate': 'Необходимые накопления',
     'budget.availableLabel': 'Доступно сейчас',
     'budget.statusLabel': 'Статус',
@@ -973,7 +977,9 @@ const TRANSLATIONS = {
     'budget.manualCategoriesNote': '各类别每周支出——不适用的类别留 0 即可。',
     'budget.saveBtn': '保存目标',
     'budget.resultsHeading': '你的计划',
+    'budget.resultsHeadingNamed': '"{name}"的计划',
     'budget.emptyState': '在上方设定目标金额以查看计划。',
+    'budget.targetAmountLabel': '目标金额',
     'budget.requiredRate': '所需储蓄',
     'budget.availableLabel': '当前可用',
     'budget.statusLabel': '状态',
@@ -3913,6 +3919,8 @@ const budgetManualIncomeInput      = document.getElementById('budget-manual-inco
 const budgetCategoryInputsEl       = document.getElementById('budget-category-inputs');
 const budgetEmptyStateEl           = document.getElementById('budget-empty-state');
 const budgetResultsEl              = document.getElementById('budget-results');
+const budgetResultsHeadingEl       = document.getElementById('budget-results-heading');
+const budgetTargetValueEl          = document.getElementById('budget-target-value');
 const budgetPrimaryLabelEl         = document.getElementById('budget-primary-label');
 const budgetPrimaryValueEl         = document.getElementById('budget-primary-value');
 const budgetAvailableValueEl       = document.getElementById('budget-available-value');
@@ -4083,10 +4091,16 @@ function readBudgetFormValues() {
 // edit) — both just hand this whatever goal-shaped object they have at the
 // time, saved or not-yet-saved.
 function renderBudgetResults(goal) {
+  budgetResultsHeadingEl.textContent = goal.name
+    ? t('budget.resultsHeadingNamed').replace('{name}', goal.name)
+    : t('budget.resultsHeading');
+
   const hasGoal = goal.targetAmount > 0;
   budgetEmptyStateEl.style.display = hasGoal ? 'none' : '';
   budgetResultsEl.style.display = hasGoal ? '' : 'none';
   if (!hasGoal) return;
+
+  budgetTargetValueEl.textContent = fmtCurrency(goal.targetAmount, 'USD');
 
   const { weekly: availableWeekly, insufficientData } = computeAvailableWeekly(goal);
   const plan = computeBudgetPlan(goal, availableWeekly);
@@ -4211,7 +4225,7 @@ budgetSourceToggle.addEventListener('click', (event) => {
   previewBudget();
 });
 
-[budgetTargetAmountInput, budgetContributionAmountInput, budgetContributionPeriodSelect, budgetHistoryWindowSelect, budgetManualIncomeInput]
+[budgetGoalNameInput, budgetTargetAmountInput, budgetContributionAmountInput, budgetContributionPeriodSelect, budgetHistoryWindowSelect, budgetManualIncomeInput]
   .forEach((el) => {
     el.addEventListener('input', previewBudget);
     el.addEventListener('change', previewBudget);

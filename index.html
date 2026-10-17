@@ -749,10 +749,14 @@
           </aside>
 
           <section class="panel">
-            <h2 data-i18n="budget.resultsHeading">Your plan</h2>
+            <h2 id="budget-results-heading" data-i18n="budget.resultsHeading">Your plan</h2>
             <div id="budget-empty-state" class="avanza-note" data-i18n="budget.emptyState">Set a target amount above to see your plan.</div>
             <div id="budget-results" style="display:none">
               <div class="stats-cards">
+                <div class="stat-card">
+                  <div class="stat-label" data-i18n="budget.targetAmountLabel">Target amount</div>
+                  <div class="stat-value" id="budget-target-value">$0</div>
+                </div>
                 <div class="stat-card">
                   <div class="stat-label" id="budget-primary-label" data-i18n="budget.requiredRate">Required savings</div>
                   <div class="stat-value" id="budget-primary-value">$0</div>
