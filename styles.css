@@ -3297,17 +3297,14 @@ body.dragging-active {
   gap: 14px;
 }
 
-/* Sized up from the original 1rem/0.92rem — with the period toggle gone,
-   this panel has nothing else to fill its width, and a short sentence or
-   two reads as sparse rather than calm at body-text size. */
 .budget-suggestions-line {
-  font-size: 1.35rem;
+  font-size: 1.05rem;
   line-height: 1.5;
   color: #f7f1ef;
 }
 
 .budget-suggestions-goal-line {
-  font-size: 1.15rem;
+  font-size: 0.95rem;
   line-height: 1.5;
   color: #c2a3a8;
 }
