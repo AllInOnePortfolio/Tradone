@@ -3291,33 +3291,23 @@ body.dragging-active {
   color: #fb7185;
 }
 
-/* The suggestions panel's period toggle sits in a .section-heading row next
-   to the title rather than stacked full-width like the goal form's own
-   toggles — fixed-width buttons instead of .budget-toggle's 1fr/1fr grid,
-   which would otherwise stretch to fill whatever space is left in the row. */
-.budget-suggestions-period-toggle {
-  display: flex;
-  width: auto;
-}
-
-.budget-suggestions-period-toggle .budget-toggle-btn {
-  padding: 8px 16px;
-}
-
 .budget-suggestions-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
 }
 
+/* Sized up from the original 1rem/0.92rem — with the period toggle gone,
+   this panel has nothing else to fill its width, and a short sentence or
+   two reads as sparse rather than calm at body-text size. */
 .budget-suggestions-line {
-  font-size: 1rem;
+  font-size: 1.35rem;
   line-height: 1.5;
   color: #f7f1ef;
 }
 
 .budget-suggestions-goal-line {
-  font-size: 0.92rem;
+  font-size: 1.15rem;
   line-height: 1.5;
   color: #c2a3a8;
 }

@@ -360,10 +360,12 @@ const TRANSLATIONS = {
     'budget.unnamedGoal': 'Goal {n}',
     'budget.removeGoalTitle': 'Remove this goal',
     'budget.newGoalBtn': 'New goal',
-    'budget.noDiscretionarySpend': 'Nothing in your lower-priority categories this period — nice.',
-    'budget.discretionarySpendLine': 'This period you spent {amount} on lower-priority categories — {breakdown}.',
+    'budget.noDiscretionarySpend': '✅ Nothing in your lower-priority categories this week or this month — nice.',
+    'budget.discretionaryLine': '🧾 This month you\'ve spent {amount} on lower-priority spending — {breakdown}.',
+    'budget.discretionaryWeekLine': '🧾 This week: {amount} on lower-priority spending — {breakdown}.',
+    'budget.discretionaryMonthLine': '📅 This month so far: {amount} total — {breakdown}.',
     'budget.noGoalsPrompt': 'Set a goal below to see how this compares to what you\'re working toward.',
-    'budget.goalComparisonLine': 'That\'s {pct}% of your "{name}" ({target}) goal.',
+    'budget.goalComparisonLine': '🎯 That\'s {pct}% of your "{name}" ({target}) goal — based on this month\'s lower-priority spending.',
     'settings.categoryImportanceHeading': 'Category importance',
     'settings.categoryImportanceNote': 'Used by the Budget tab to tell necessary spending from discretionary — 1 is easiest to cut, 5 is essential. A category you haven\'t rated yet starts in the middle.',
 
@@ -676,10 +678,12 @@ const TRANSLATIONS = {
     'budget.unnamedGoal': 'Цель {n}',
     'budget.removeGoalTitle': 'Удалить эту цель',
     'budget.newGoalBtn': 'Новая цель',
-    'budget.noDiscretionarySpend': 'За этот период нет трат в категориях низкого приоритета — отлично.',
-    'budget.discretionarySpendLine': 'За этот период вы потратили {amount} на менее важные категории — {breakdown}.',
+    'budget.noDiscretionarySpend': '✅ На этой неделе и в этом месяце нет трат в категориях низкого приоритета — отлично.',
+    'budget.discretionaryLine': '🧾 В этом месяце вы потратили {amount} на менее важные категории — {breakdown}.',
+    'budget.discretionaryWeekLine': '🧾 На этой неделе: {amount} на менее важные категории — {breakdown}.',
+    'budget.discretionaryMonthLine': '📅 За этот месяц: {amount} всего — {breakdown}.',
     'budget.noGoalsPrompt': 'Задайте цель ниже, чтобы увидеть, как это соотносится с тем, к чему вы идёте.',
-    'budget.goalComparisonLine': 'Это {pct}% от вашей цели «{name}» ({target}).',
+    'budget.goalComparisonLine': '🎯 Это {pct}% от вашей цели «{name}» ({target}) — на основе трат этого месяца в категориях низкого приоритета.',
     'settings.categoryImportanceHeading': 'Важность категорий',
     'settings.categoryImportanceNote': 'Используется на вкладке «Бюджет», чтобы отличать необходимые траты от необязательных — 1 легче всего сократить, 5 — необходимо. Категория, которую вы ещё не оценили, начинается посередине.',
 
@@ -991,10 +995,12 @@ const TRANSLATIONS = {
     'budget.unnamedGoal': '目标 {n}',
     'budget.removeGoalTitle': '删除此目标',
     'budget.newGoalBtn': '新目标',
-    'budget.noDiscretionarySpend': '本期在低优先级类别没有支出 —— 很好。',
-    'budget.discretionarySpendLine': '本期你在低优先级类别花费了 {amount} —— {breakdown}。',
+    'budget.noDiscretionarySpend': '✅ 本周和本月在低优先级类别均没有支出 —— 很好。',
+    'budget.discretionaryLine': '🧾 本月你在低优先级类别花费了 {amount} —— {breakdown}。',
+    'budget.discretionaryWeekLine': '🧾 本周：{amount} 用于低优先级类别 —— {breakdown}。',
+    'budget.discretionaryMonthLine': '📅 本月累计：{amount} —— {breakdown}。',
     'budget.noGoalsPrompt': '在下方设定目标，查看这与你的目标相比如何。',
-    'budget.goalComparisonLine': '这相当于你的"{name}"（{target}）目标的 {pct}%。',
+    'budget.goalComparisonLine': '🎯 这相当于你的"{name}"（{target}）目标的 {pct}% —— 基于本月低优先级类别的支出。',
     'settings.categoryImportanceHeading': '类别重要性',
     'settings.categoryImportanceNote': '预算页面用它区分必要支出和非必要支出 —— 1 最容易削减，5 最为必要。尚未设置的类别默认为中等。',
 
@@ -3915,9 +3921,7 @@ const budgetStatusDetailEl         = document.getElementById('budget-status-deta
 const budgetAmountCurrencyEl       = document.getElementById('budget-amount-currency');
 const budgetContributionCurrencyEl = document.getElementById('budget-contribution-currency');
 const budgetIncomeCurrencyEl       = document.getElementById('budget-income-currency');
-const budgetSuggestionsPeriodToggleEl = document.getElementById('budget-suggestions-period-toggle');
 const budgetSuggestionsBodyEl      = document.getElementById('budget-suggestions-body');
-let budgetSuggestionsPeriod = 'week';
 
 // Every amount typed into this form is in the user's current display
 // currency (same convention as the Add-expense amount field) and gets
@@ -4226,20 +4230,13 @@ budgetForm.addEventListener('submit', (event) => {
   renderBudget();
 });
 
-// Same [start, end] shape as getSelectedExpensePeriod above, just driven by
-// this panel's own week/month toggle instead of the Expenses page's period
-// <select> — kept standalone rather than reusing that function directly
-// since it reads straight from expensePeriodSelect.value.
-function getBudgetSuggestionsPeriodBounds() {
+// This week's bounds (Monday-start, same convention as Expenses' own "This
+// week" stat, deliberately independent of the weekStart setting — see
+// getSelectedExpensePeriod's own comment for why that one is too) and the
+// calendar month containing today — the suggestions panel shows both at
+// once rather than making the user toggle between them.
+function getCurrentWeekBounds() {
   const today = parseISODateLocal(todayLocalISODate());
-  if (budgetSuggestionsPeriod === 'month') {
-    const start = new Date(today.getFullYear(), today.getMonth(), 1);
-    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    return [toISODate(start), toISODate(end)];
-  }
-  // Monday-start week containing today — same convention as Expenses' own
-  // "This week" stat, deliberately independent of the weekStart setting
-  // (see getSelectedExpensePeriod's own comment for why that one is too).
   const isoDayIndex = (today.getDay() + 6) % 7;
   const start = new Date(today);
   start.setDate(today.getDate() - isoDayIndex);
@@ -4248,45 +4245,70 @@ function getBudgetSuggestionsPeriodBounds() {
   return [toISODate(start), toISODate(end)];
 }
 
-// Sums this period's spending in every category rated 1-2 (see
-// getCategoryImportance/DEFAULT_CATEGORY_IMPORTANCE) and, for each saved
-// goal, says what share of that goal's target that spending would have
-// covered — called after every renderBudget (goals/period/amounts can all
-// move the numbers) and on its own period-toggle clicks.
-function renderBudgetSuggestions() {
-  const [start, end] = getBudgetSuggestionsPeriodBounds();
-  const periodExpenses = expenses.filter((e) => e.type === 'expense' && isExpenseWithinPeriod(e.date, start, end));
+function getCurrentMonthBounds() {
+  const today = parseISODateLocal(todayLocalISODate());
+  const start = new Date(today.getFullYear(), today.getMonth(), 1);
+  const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  return [toISODate(start), toISODate(end)];
+}
 
+// Sums spending in every category rated 1-2 (see getCategoryImportance/
+// DEFAULT_CATEGORY_IMPORTANCE) within [start, end], plus a sorted
+// "Category ($amount)" breakdown string for display.
+function discretionarySpendFor(start, end) {
   const byCategory = new Map();
-  let discretionarySpend = 0;
-  periodExpenses.forEach((e) => {
-    if (getCategoryImportance(e.category) > 2) return;
-    discretionarySpend += e.amount;
-    byCategory.set(e.category, (byCategory.get(e.category) || 0) + e.amount);
-  });
+  let total = 0;
+  expenses
+    .filter((e) => e.type === 'expense' && isExpenseWithinPeriod(e.date, start, end))
+    .forEach((e) => {
+      if (getCategoryImportance(e.category) > 2) return;
+      total += e.amount;
+      byCategory.set(e.category, (byCategory.get(e.category) || 0) + e.amount);
+    });
+
+  const catMap = categoryMapForType('expense');
+  const breakdown = [...byCategory.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([value, amount]) => `${categoryLabel(catMap.get(value) || catMap.get('other'), 'expense')} (${fmtCurrency(amount, 'USD')})`)
+    .join(', ');
+
+  return { total, breakdown };
+}
+
+// Week and month are shown together rather than behind a toggle — mentions
+// both whenever they actually differ (the common case), but collapses to
+// one line when the week IS the whole of the month's spend so far (e.g.
+// the first few days of a month), rather than saying the same number twice.
+// For each saved goal, what share of its target the MONTH's total would
+// have covered — the week's figure alone is usually too small a fraction
+// of any real goal to be a meaningful comparison.
+function renderBudgetSuggestions() {
+  const week = discretionarySpendFor(...getCurrentWeekBounds());
+  const month = discretionarySpendFor(...getCurrentMonthBounds());
 
   const lines = [];
-  if (discretionarySpend <= 0) {
+  if (month.total <= 0) {
     lines.push(`<p class="budget-suggestions-line">${t('budget.noDiscretionarySpend')}</p>`);
   } else {
-    const catMap = categoryMapForType('expense');
-    const breakdown = [...byCategory.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .map(([value, amount]) => {
-        const cat = catMap.get(value) || catMap.get('other');
-        return `${categoryLabel(cat, 'expense')} (${fmtCurrency(amount, 'USD')})`;
-      })
-      .join(', ');
-    lines.push(`<p class="budget-suggestions-line">${t('budget.discretionarySpendLine')
-      .replace('{amount}', fmtCurrency(discretionarySpend, 'USD'))
-      .replace('{breakdown}', breakdown)}</p>`);
+    if (week.total > 0 && week.total < month.total) {
+      lines.push(`<p class="budget-suggestions-line">${t('budget.discretionaryWeekLine')
+        .replace('{amount}', fmtCurrency(week.total, 'USD'))
+        .replace('{breakdown}', week.breakdown)}</p>`);
+      lines.push(`<p class="budget-suggestions-line">${t('budget.discretionaryMonthLine')
+        .replace('{amount}', fmtCurrency(month.total, 'USD'))
+        .replace('{breakdown}', month.breakdown)}</p>`);
+    } else {
+      lines.push(`<p class="budget-suggestions-line">${t('budget.discretionaryLine')
+        .replace('{amount}', fmtCurrency(month.total, 'USD'))
+        .replace('{breakdown}', month.breakdown)}</p>`);
+    }
 
     if (!budgetGoals.length) {
       lines.push(`<p class="budget-suggestions-goal-line">${t('budget.noGoalsPrompt')}</p>`);
     } else {
       budgetGoals.forEach((g, i) => {
         if (!(g.targetAmount > 0)) return;
-        const pct = Math.min(100, (discretionarySpend / g.targetAmount) * 100);
+        const pct = Math.min(100, (month.total / g.targetAmount) * 100);
         lines.push(`<p class="budget-suggestions-goal-line">${t('budget.goalComparisonLine')
           .replace('{pct}', pct < 1 ? pct.toFixed(2) : pct.toFixed(1))
           .replace('{name}', g.name || t('budget.unnamedGoal').replace('{n}', i + 1))
@@ -4297,14 +4319,6 @@ function renderBudgetSuggestions() {
 
   budgetSuggestionsBodyEl.innerHTML = lines.join('');
 }
-
-budgetSuggestionsPeriodToggleEl.addEventListener('click', (event) => {
-  const btn = event.target.closest('.budget-toggle-btn[data-period]');
-  if (!btn) return;
-  budgetSuggestionsPeriod = btn.dataset.period;
-  budgetSuggestionsPeriodToggleEl.querySelectorAll('.budget-toggle-btn').forEach((b) => b.classList.toggle('active', b === btn));
-  renderBudgetSuggestions();
-});
 
 // ── Drag-to-reorder account cards ───────────────────────────────────────────
 // Only the small grip icon in each card's header is draggable (not the whole
