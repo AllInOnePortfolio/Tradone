@@ -663,11 +663,27 @@
       </section>
 
       <section id="page-budget" class="app-page" style="display:none">
+        <section class="panel budget-suggestions-panel">
+          <div class="section-heading">
+            <h2 data-i18n="budget.suggestionsHeading">Spending suggestions</h2>
+            <div class="budget-toggle budget-suggestions-period-toggle" id="budget-suggestions-period-toggle" role="group" aria-label="Period">
+              <button type="button" class="budget-toggle-btn active" data-period="week" data-i18n="expenses.periodWeek">This week</button>
+              <button type="button" class="budget-toggle-btn" data-period="month" data-i18n="expenses.periodMonth">This month</button>
+            </div>
+          </div>
+          <div id="budget-suggestions-body" class="budget-suggestions-body"></div>
+        </section>
+
         <div class="content-grid">
           <aside class="panel form-panel">
             <h2 data-i18n="budget.goalHeading">Savings goal</h2>
             <p class="avanza-note" data-i18n="budget.goalNote">Set a target and let Tradone work out the other half — how much to save, or by when.</p>
+            <div id="budget-goal-tabs" class="budget-goal-tabs"></div>
             <form id="budget-form" class="account-form">
+              <label>
+                <span data-i18n="budget.goalNameLabel">Goal name</span>
+                <input id="budget-goal-name" type="text" data-i18n-placeholder="budget.goalNamePlaceholder" placeholder="Example: Europe Trip" />
+              </label>
               <label>
                 <span><span data-i18n="budget.targetLabel">Target amount</span> (<span id="budget-amount-currency">USD</span>)</span>
                 <input id="budget-target-amount" type="number" step="any" min="0" placeholder="5000" required />
@@ -807,6 +823,12 @@
                 <option value="sunday" data-i18n="settings.weekStartSunday">Sunday</option>
               </select>
             </label>
+          </div>
+
+          <div class="expense-io-section">
+            <h2 data-i18n="settings.categoryImportanceHeading">Category importance</h2>
+            <p class="avanza-note" data-i18n="settings.categoryImportanceNote">Used by the Budget tab to tell necessary spending from discretionary — 1 is easiest to cut, 5 is essential. A category you haven't rated yet starts in the middle.</p>
+            <div id="settings-category-importance-list" class="importance-list"></div>
           </div>
 
           <div class="expense-io-section">

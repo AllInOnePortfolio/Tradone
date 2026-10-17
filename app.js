@@ -354,6 +354,18 @@ const TRANSLATIONS = {
     'budget.error.invalidContribution': 'Enter a contribution amount',
     'budget.error.missingDeadline': 'Pick a deadline',
     'budget.error.pastDeadline': 'Deadline must be in the future',
+    'budget.suggestionsHeading': 'Spending suggestions',
+    'budget.goalNameLabel': 'Goal name',
+    'budget.goalNamePlaceholder': 'Example: Europe Trip',
+    'budget.unnamedGoal': 'Goal {n}',
+    'budget.removeGoalTitle': 'Remove this goal',
+    'budget.newGoalBtn': 'New goal',
+    'budget.noDiscretionarySpend': 'Nothing in your lower-priority categories this period — nice.',
+    'budget.discretionarySpendLine': 'This period you spent {amount} on lower-priority categories — {breakdown}.',
+    'budget.noGoalsPrompt': 'Set a goal below to see how this compares to what you\'re working toward.',
+    'budget.goalComparisonLine': 'That\'s {pct}% of your "{name}" ({target}) goal.',
+    'settings.categoryImportanceHeading': 'Category importance',
+    'settings.categoryImportanceNote': 'Used by the Budget tab to tell necessary spending from discretionary — 1 is easiest to cut, 5 is essential. A category you haven\'t rated yet starts in the middle.',
 
 
     'settings.heading': 'Display settings',
@@ -658,6 +670,18 @@ const TRANSLATIONS = {
     'budget.error.invalidContribution': 'Укажите сумму взноса',
     'budget.error.missingDeadline': 'Выберите срок',
     'budget.error.pastDeadline': 'Срок должен быть в будущем',
+    'budget.suggestionsHeading': 'Советы по тратам',
+    'budget.goalNameLabel': 'Название цели',
+    'budget.goalNamePlaceholder': 'Например: Поездка в Европу',
+    'budget.unnamedGoal': 'Цель {n}',
+    'budget.removeGoalTitle': 'Удалить эту цель',
+    'budget.newGoalBtn': 'Новая цель',
+    'budget.noDiscretionarySpend': 'За этот период нет трат в категориях низкого приоритета — отлично.',
+    'budget.discretionarySpendLine': 'За этот период вы потратили {amount} на менее важные категории — {breakdown}.',
+    'budget.noGoalsPrompt': 'Задайте цель ниже, чтобы увидеть, как это соотносится с тем, к чему вы идёте.',
+    'budget.goalComparisonLine': 'Это {pct}% от вашей цели «{name}» ({target}).',
+    'settings.categoryImportanceHeading': 'Важность категорий',
+    'settings.categoryImportanceNote': 'Используется на вкладке «Бюджет», чтобы отличать необходимые траты от необязательных — 1 легче всего сократить, 5 — необходимо. Категория, которую вы ещё не оценили, начинается посередине.',
 
 
     'settings.heading': 'Настройки отображения',
@@ -961,6 +985,18 @@ const TRANSLATIONS = {
     'budget.error.invalidContribution': '请输入存入金额',
     'budget.error.missingDeadline': '请选择截止日期',
     'budget.error.pastDeadline': '截止日期必须在将来',
+    'budget.suggestionsHeading': '消费建议',
+    'budget.goalNameLabel': '目标名称',
+    'budget.goalNamePlaceholder': '例如：欧洲旅行',
+    'budget.unnamedGoal': '目标 {n}',
+    'budget.removeGoalTitle': '删除此目标',
+    'budget.newGoalBtn': '新目标',
+    'budget.noDiscretionarySpend': '本期在低优先级类别没有支出 —— 很好。',
+    'budget.discretionarySpendLine': '本期你在低优先级类别花费了 {amount} —— {breakdown}。',
+    'budget.noGoalsPrompt': '在下方设定目标，查看这与你的目标相比如何。',
+    'budget.goalComparisonLine': '这相当于你的"{name}"（{target}）目标的 {pct}%。',
+    'settings.categoryImportanceHeading': '类别重要性',
+    'settings.categoryImportanceNote': '预算页面用它区分必要支出和非必要支出 —— 1 最容易削减，5 最为必要。尚未设置的类别默认为中等。',
 
 
     'settings.heading': '显示设置',
@@ -1424,6 +1460,7 @@ function goToPage(page) {
   pageSettings.style.display = page === 'settings' ? '' : 'none';
   if (page === 'expenses') renderExpenses();
   if (page === 'budget') renderBudget();
+  if (page === 'settings') renderCategoryImportanceSettings();
   // Same staggered entrance reveal the app plays on login, replayed for
   // whichever page just became visible — playPopInAnimation only picks up
   // elements that are actually rendered (offsetParent !== null), so it
@@ -1777,6 +1814,35 @@ const EARNING_CATEGORIES = [
   { value: 'other', color: '#898781' }
 ];
 
+// How "easy to cut" each expense category is, 1 (discretionary — a lone
+// coffee run, an impulse buy) through 5 (essential — rent, groceries) — the
+// Budget tab's spending-suggestions panel sums everything at level 1-2 into
+// "lower-priority spending" against the user's goals. A category with no
+// entry here yet (freshly custom, or built-in but never rated) falls back
+// to 3 — neutral, neither flagged as cuttable nor counted as essential —
+// rather than silently defaulting to "essential" or "cuttable", either of
+// which would skew the suggestion before the user's ever weighed in.
+const DEFAULT_CATEGORY_IMPORTANCE = {
+  groceries: 5,
+  housing: 5,
+  utilities: 5,
+  health: 5,
+  transport: 4,
+  dining: 1,
+  entertainment: 1,
+  shopping: 1,
+  other: 3
+};
+
+function getCategoryImportance(value) {
+  return categoryImportance[value] ?? DEFAULT_CATEGORY_IMPORTANCE[value] ?? 3;
+}
+
+// Vault-synced (see storage.js's PROFILE_FIELDS), same "no localStorage
+// mirror" treatment as budgetGoal below — loaded fresh in
+// loadProfileAndRestore on every unlock.
+let categoryImportance = {};
+
 // User-added categories (see the "Manage categories" panel below the
 // Category field) — a plain array like manualCryptoPositions/
 // manualCryptoSales, each `{ id, value: id, type, label, color, custom: true }`.
@@ -1938,6 +2004,47 @@ function categoryLabel(cat, type = 'expense') {
   const prefix = type === 'earning' ? 'earningCategory' : 'expenseCategory';
   return t(`${prefix}.${cat.value}`);
 }
+
+// ── Category importance (Settings) ──────────────────────────────────────────
+// One row per expense category, each a 5-bubble scale the user can click to
+// rate how essential that category's spending is — read by the Budget tab's
+// suggestions panel via getCategoryImportance above. Regenerated on every
+// visit to Settings (see goToPage) rather than kept static, same reasoning
+// as renderBudgetCategoryInputs: a category added/renamed on the Expenses
+// tab should show up here without a reload.
+const settingsCategoryImportanceListEl = document.getElementById('settings-category-importance-list');
+
+function renderCategoryImportanceSettings() {
+  const cats = categoriesForType('expense');
+  settingsCategoryImportanceListEl.innerHTML = cats
+    .map((cat) => {
+      const level = getCategoryImportance(cat.value);
+      const bubbles = [1, 2, 3, 4, 5]
+        .map((n) => `<button type="button" class="importance-bubble${n <= level ? ' filled' : ''}" data-level="${n}" title="${n}"></button>`)
+        .join('');
+      return `
+        <div class="importance-row" data-category="${cat.value}">
+          <span class="importance-row-label">${categorySwatchHtml(cat)}<span>${categoryLabel(cat, 'expense')}</span></span>
+          <div class="importance-bubbles" role="group" aria-label="${t('settings.categoryImportanceHeading')}">${bubbles}</div>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+settingsCategoryImportanceListEl.addEventListener('click', (event) => {
+  const bubble = event.target.closest('.importance-bubble[data-level]');
+  if (!bubble) return;
+  const category = bubble.closest('.importance-row')?.dataset.category;
+  if (!category) return;
+  categoryImportance = { ...categoryImportance, [category]: Number(bubble.dataset.level) };
+  syncProfileToServer();
+  renderCategoryImportanceSettings();
+  // A category rated 1-2 may now (or no longer) count toward the Budget
+  // tab's "lower-priority spending" total — refresh it live if that tab
+  // happens to already be the one showing.
+  if (pageBudget.style.display !== 'none') renderBudgetSuggestions();
+});
 
 function loadExpenses() {
   try {
@@ -3751,18 +3858,26 @@ accountsList.addEventListener('click', (event) => {
 });
 
 // ── Budget optimization ─────────────────────────────────────────────────────
-// A third top-level tab: the user names a savings target and either a
-// deadline (we solve for the required rate) or a contribution rate (we solve
-// for the date), then picks where "how much can I actually save" comes from
-// — real averaged history from the Expenses tracker above, or hand-typed
-// weekly figures. Persisted as the single `budgetGoal` vault field (see
-// storage.js's PROFILE_FIELDS); unlike Expenses there's no localStorage
-// mirror, since this is one small object loaded fresh from the vault on
-// every unlock rather than something that needs to survive page reloads
-// before a vault read completes.
-let budgetGoal = null;
+// A third top-level tab: the user names one or more savings targets and,
+// per goal, either a deadline (we solve for the required rate) or a
+// contribution rate (we solve for the date), then picks where "how much can
+// I actually save" comes from — real averaged history from the Expenses
+// tracker above, or hand-typed weekly figures. Persisted as the
+// `budgetGoals` vault field (see storage.js's PROFILE_FIELDS); unlike
+// Expenses there's no localStorage mirror, since this is a small array
+// loaded fresh from the vault on every unlock rather than something that
+// needs to survive page reloads before a vault read completes.
+//
+// Only one goal is ever shown/edited in the form at a time — selectedBudgetGoalId
+// says which (see renderBudgetGoalTabs) — null means "not editing an
+// existing goal," i.e. the form is a fresh draft for a new one, using
+// DEFAULT_BUDGET_GOAL as its starting shape.
+let budgetGoals = [];
+let selectedBudgetGoalId = null;
 
 const DEFAULT_BUDGET_GOAL = {
+  id: null,
+  name: '',
   targetAmount: 0,
   solveMode: 'byDate',
   deadline: null,
@@ -3774,7 +3889,9 @@ const DEFAULT_BUDGET_GOAL = {
   manualCategoryBudget: null
 };
 
+const budgetGoalTabsEl             = document.getElementById('budget-goal-tabs');
 const budgetForm                   = document.getElementById('budget-form');
+const budgetGoalNameInput          = document.getElementById('budget-goal-name');
 const budgetTargetAmountInput      = document.getElementById('budget-target-amount');
 const budgetSolveToggle            = document.getElementById('budget-solve-toggle');
 const budgetDeadlineFieldEl        = document.getElementById('budget-deadline-field');
@@ -3798,6 +3915,9 @@ const budgetStatusDetailEl         = document.getElementById('budget-status-deta
 const budgetAmountCurrencyEl       = document.getElementById('budget-amount-currency');
 const budgetContributionCurrencyEl = document.getElementById('budget-contribution-currency');
 const budgetIncomeCurrencyEl       = document.getElementById('budget-income-currency');
+const budgetSuggestionsPeriodToggleEl = document.getElementById('budget-suggestions-period-toggle');
+const budgetSuggestionsBodyEl      = document.getElementById('budget-suggestions-body');
+let budgetSuggestionsPeriod = 'week';
 
 // Every amount typed into this form is in the user's current display
 // currency (same convention as the Add-expense amount field) and gets
@@ -3939,6 +4059,8 @@ function readBudgetFormValues() {
   const contributionAmount = budgetContributionAmountInput.value === '' ? null : Number(budgetContributionAmountInput.value);
   const manualIncome = budgetManualIncomeInput.value === '' ? null : Number(budgetManualIncomeInput.value);
   return {
+    id: selectedBudgetGoalId || crypto.randomUUID(),
+    name: budgetGoalNameInput.value.trim(),
     targetAmount: convertToUSD(Number(budgetTargetAmountInput.value) || 0, displayCurrency),
     solveMode: budgetSolveToggle.querySelector('.budget-toggle-btn.active')?.dataset.solve || 'byDate',
     deadline: budgetDeadlineTrigger.dataset.date || null,
@@ -3996,14 +4118,56 @@ function previewBudget() {
   renderBudgetResults(readBudgetFormValues());
 }
 
-// Repopulates every field from the saved budgetGoal (or the all-zero
-// default, for a user who's never set one) — called on nav-in rather than
-// kept live, same lazy-recompute rationale as Expenses (see the comment at
-// the top of goToPage above).
+// One pill per saved goal, plus a trailing "+ New goal" pill — click a pill
+// to edit that goal, click its × to remove it. Regenerated on every render
+// rather than diffed, same as the other small lists on this page.
+function renderBudgetGoalTabs() {
+  const tabsHtml = budgetGoals
+    .map((g, i) => `
+      <button type="button" class="budget-goal-tab${g.id === selectedBudgetGoalId ? ' active' : ''}" data-goal-id="${g.id}">
+        <span>${g.name || t('budget.unnamedGoal').replace('{n}', i + 1)}</span>
+        <span class="budget-goal-tab-remove" data-remove-goal-id="${g.id}" title="${t('budget.removeGoalTitle')}">×</span>
+      </button>
+    `)
+    .join('');
+  budgetGoalTabsEl.innerHTML = `
+    ${tabsHtml}
+    <button type="button" class="budget-goal-tab budget-goal-tab-new${selectedBudgetGoalId == null ? ' active' : ''}" data-new-goal>+ ${t('budget.newGoalBtn')}</button>
+  `;
+}
+
+budgetGoalTabsEl.addEventListener('click', (event) => {
+  const removeBtn = event.target.closest('[data-remove-goal-id]');
+  if (removeBtn) {
+    const id = removeBtn.dataset.removeGoalId;
+    budgetGoals = budgetGoals.filter((g) => g.id !== id);
+    if (selectedBudgetGoalId === id) selectedBudgetGoalId = budgetGoals[0]?.id ?? null;
+    syncProfileToServer();
+    renderBudget();
+    return;
+  }
+  if (event.target.closest('[data-new-goal]')) {
+    selectedBudgetGoalId = null;
+    renderBudget();
+    return;
+  }
+  const tab = event.target.closest('.budget-goal-tab[data-goal-id]');
+  if (tab) {
+    selectedBudgetGoalId = tab.dataset.goalId;
+    renderBudget();
+  }
+});
+
+// Repopulates every field from the selected goal (or the all-zero default,
+// for a fresh "+ New goal" draft) — called on nav-in rather than kept live,
+// same lazy-recompute rationale as Expenses (see the comment at the top of
+// goToPage above).
 function renderBudget() {
   updateBudgetCurrencyHints();
-  const goal = budgetGoal || DEFAULT_BUDGET_GOAL;
+  renderBudgetGoalTabs();
+  const goal = budgetGoals.find((g) => g.id === selectedBudgetGoalId) || DEFAULT_BUDGET_GOAL;
 
+  budgetGoalNameInput.value = goal.name || '';
   budgetTargetAmountInput.value = goal.targetAmount ? convertToDisplayCurrency(goal.targetAmount, 'USD') : '';
 
   setBudgetToggleActive(budgetSolveToggle, 'solve', goal.solveMode);
@@ -4022,6 +4186,7 @@ function renderBudget() {
   renderBudgetCategoryInputs(goal.manualCategoryBudget);
 
   renderBudgetResults(goal);
+  renderBudgetSuggestions();
 }
 
 budgetSolveToggle.addEventListener('click', (event) => {
@@ -4052,9 +4217,93 @@ budgetCategoryInputsEl.addEventListener('input', previewBudget);
 
 budgetForm.addEventListener('submit', (event) => {
   event.preventDefault();
-  budgetGoal = readBudgetFormValues();
+  const goal = readBudgetFormValues();
+  const existingIndex = budgetGoals.findIndex((g) => g.id === goal.id);
+  if (existingIndex === -1) budgetGoals = [...budgetGoals, goal];
+  else budgetGoals = budgetGoals.map((g, i) => (i === existingIndex ? goal : g));
+  selectedBudgetGoalId = goal.id;
   syncProfileToServer();
   renderBudget();
+});
+
+// Same [start, end] shape as getSelectedExpensePeriod above, just driven by
+// this panel's own week/month toggle instead of the Expenses page's period
+// <select> — kept standalone rather than reusing that function directly
+// since it reads straight from expensePeriodSelect.value.
+function getBudgetSuggestionsPeriodBounds() {
+  const today = parseISODateLocal(todayLocalISODate());
+  if (budgetSuggestionsPeriod === 'month') {
+    const start = new Date(today.getFullYear(), today.getMonth(), 1);
+    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    return [toISODate(start), toISODate(end)];
+  }
+  // Monday-start week containing today — same convention as Expenses' own
+  // "This week" stat, deliberately independent of the weekStart setting
+  // (see getSelectedExpensePeriod's own comment for why that one is too).
+  const isoDayIndex = (today.getDay() + 6) % 7;
+  const start = new Date(today);
+  start.setDate(today.getDate() - isoDayIndex);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return [toISODate(start), toISODate(end)];
+}
+
+// Sums this period's spending in every category rated 1-2 (see
+// getCategoryImportance/DEFAULT_CATEGORY_IMPORTANCE) and, for each saved
+// goal, says what share of that goal's target that spending would have
+// covered — called after every renderBudget (goals/period/amounts can all
+// move the numbers) and on its own period-toggle clicks.
+function renderBudgetSuggestions() {
+  const [start, end] = getBudgetSuggestionsPeriodBounds();
+  const periodExpenses = expenses.filter((e) => e.type === 'expense' && isExpenseWithinPeriod(e.date, start, end));
+
+  const byCategory = new Map();
+  let discretionarySpend = 0;
+  periodExpenses.forEach((e) => {
+    if (getCategoryImportance(e.category) > 2) return;
+    discretionarySpend += e.amount;
+    byCategory.set(e.category, (byCategory.get(e.category) || 0) + e.amount);
+  });
+
+  const lines = [];
+  if (discretionarySpend <= 0) {
+    lines.push(`<p class="budget-suggestions-line">${t('budget.noDiscretionarySpend')}</p>`);
+  } else {
+    const catMap = categoryMapForType('expense');
+    const breakdown = [...byCategory.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([value, amount]) => {
+        const cat = catMap.get(value) || catMap.get('other');
+        return `${categoryLabel(cat, 'expense')} (${fmtCurrency(amount, 'USD')})`;
+      })
+      .join(', ');
+    lines.push(`<p class="budget-suggestions-line">${t('budget.discretionarySpendLine')
+      .replace('{amount}', fmtCurrency(discretionarySpend, 'USD'))
+      .replace('{breakdown}', breakdown)}</p>`);
+
+    if (!budgetGoals.length) {
+      lines.push(`<p class="budget-suggestions-goal-line">${t('budget.noGoalsPrompt')}</p>`);
+    } else {
+      budgetGoals.forEach((g, i) => {
+        if (!(g.targetAmount > 0)) return;
+        const pct = Math.min(100, (discretionarySpend / g.targetAmount) * 100);
+        lines.push(`<p class="budget-suggestions-goal-line">${t('budget.goalComparisonLine')
+          .replace('{pct}', pct < 1 ? pct.toFixed(2) : pct.toFixed(1))
+          .replace('{name}', g.name || t('budget.unnamedGoal').replace('{n}', i + 1))
+          .replace('{target}', fmtCurrency(g.targetAmount, 'USD'))}</p>`);
+      });
+    }
+  }
+
+  budgetSuggestionsBodyEl.innerHTML = lines.join('');
+}
+
+budgetSuggestionsPeriodToggleEl.addEventListener('click', (event) => {
+  const btn = event.target.closest('.budget-toggle-btn[data-period]');
+  if (!btn) return;
+  budgetSuggestionsPeriod = btn.dataset.period;
+  budgetSuggestionsPeriodToggleEl.querySelectorAll('.budget-toggle-btn').forEach((b) => b.classList.toggle('active', b === btn));
+  renderBudgetSuggestions();
 });
 
 // ── Drag-to-reorder account cards ───────────────────────────────────────────
@@ -6727,7 +6976,8 @@ async function syncProfileToServer() {
       expenses,
       customExpenseCategories,
       hiddenExpenseCategories: [...hiddenExpenseCategories],
-      budgetGoal,
+      budgetGoals,
+      categoryImportance,
       avanzaSnapshot: avanzaSnapshotPayload,
       paypalSnapshot,
       avanzaSession,
@@ -6792,7 +7042,17 @@ async function loadProfileAndRestore() {
   saveHiddenExpenseCategories();
   renderExpenseCategoryOptions(expenseFormType);
   renderExpenses();
-  budgetGoal = profile.budgetGoal || null;
+  // A vault saved before multiple goals existed has its one goal under the
+  // old singular `budgetGoal` key (still in PROFILE_FIELDS for exactly this
+  // read) — wrapped into a one-item list here rather than dropped, so it
+  // isn't silently lost the first time this runs on an older vault.
+  budgetGoals = profile.budgetGoals?.length
+    ? profile.budgetGoals
+    : profile.budgetGoal
+      ? [{ ...profile.budgetGoal, id: profile.budgetGoal.id || crypto.randomUUID(), name: profile.budgetGoal.name || '' }]
+      : [];
+  selectedBudgetGoalId = budgetGoals[0]?.id ?? null;
+  categoryImportance = profile.categoryImportance || {};
   renderBudget();
   liveAccounts = [];
   savedWalletAddresses.clear();

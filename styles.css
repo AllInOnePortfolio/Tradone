@@ -3291,6 +3291,156 @@ body.dragging-active {
   color: #fb7185;
 }
 
+/* The suggestions panel's period toggle sits in a .section-heading row next
+   to the title rather than stacked full-width like the goal form's own
+   toggles — fixed-width buttons instead of .budget-toggle's 1fr/1fr grid,
+   which would otherwise stretch to fill whatever space is left in the row. */
+.budget-suggestions-period-toggle {
+  display: flex;
+  width: auto;
+}
+
+.budget-suggestions-period-toggle .budget-toggle-btn {
+  padding: 8px 16px;
+}
+
+.budget-suggestions-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.budget-suggestions-line {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #f7f1ef;
+}
+
+.budget-suggestions-goal-line {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #c2a3a8;
+}
+
+/* One pill per goal, same visual language as .app-nav-btn — the active one
+   picks up the same gradient so "which goal am I editing" reads the same
+   way "which tab am I on" does at the top of the app. */
+.budget-goal-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.budget-goal-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(23, 11, 13, 0.6);
+  color: #c2a3a8;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.budget-goal-tab:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f7f1ef;
+}
+
+.budget-goal-tab.active {
+  background: linear-gradient(135deg, #be123c, #d97706);
+  border-color: transparent;
+  color: white;
+}
+
+.budget-goal-tab-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  color: inherit;
+  opacity: 0.75;
+}
+
+.budget-goal-tab-remove:hover {
+  opacity: 1;
+}
+
+.budget-goal-tab-new {
+  border-style: dashed;
+}
+
+/* ── Category importance (Settings) ──────────────────────────────── */
+.importance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.importance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.importance-row:last-child {
+  border-bottom: none;
+}
+
+.importance-row-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #f7f1ef;
+  font-size: 0.95rem;
+}
+
+/* The 5 dots sit on a thin connecting line (the row's own ::before, since a
+   single flat bar behind inline buttons needs a positioning context) so the
+   whole control reads as one scale being filled in, not 5 separate buttons. */
+.importance-bubbles {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.importance-bubbles::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  top: 50%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-50%);
+}
+
+.importance-bubble {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  background: #1c0f12;
+  padding: 0;
+  cursor: pointer;
+}
+
+.importance-bubble.filled {
+  border-color: transparent;
+  background: linear-gradient(135deg, #be123c, #d97706);
+}
+
 /* ── Responsive ────────────────────────────────────────────────── */
 
 @media (max-width: 900px) {

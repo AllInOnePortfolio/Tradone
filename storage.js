@@ -45,6 +45,8 @@ const Vault = (() => {
     customExpenseCategories: [],
     hiddenExpenseCategories: [],
     budgetGoal: null,
+    budgetGoals: [],
+    categoryImportance: {},
     avanzaSnapshot: null,
     paypalSnapshot: null,
     avanzaSession: null,
@@ -195,6 +197,10 @@ const Vault = (() => {
   // enum-like field to a known option, same spirit as sanitizeExpenses above
   // — this is real financial data a corrupted/tampered record shouldn't be
   // able to turn into a NaN/Infinity that breaks the budget math downstream.
+  // `id`/`name` are only meaningful once a goal lives inside the
+  // `budgetGoals` array (see sanitizeBudgetGoals) — kept optional here so
+  // this same function still sanitizes a legacy single `budgetGoal` record
+  // that predates both fields.
   function sanitizeBudgetGoal(raw) {
     if (!raw || typeof raw !== 'object') return null;
     const num = (v) => (Number.isFinite(v) && v >= 0 ? v : 0);
@@ -205,6 +211,8 @@ const Vault = (() => {
       }
     }
     return {
+      id: typeof raw.id === 'string' ? raw.id : crypto.randomUUID(),
+      name: typeof raw.name === 'string' ? raw.name.slice(0, 80) : '',
       targetAmount: num(raw.targetAmount),
       solveMode: raw.solveMode === 'byRate' ? 'byRate' : 'byDate',
       deadline: typeof raw.deadline === 'string' ? raw.deadline.slice(0, 10) : null,
@@ -218,9 +226,35 @@ const Vault = (() => {
     };
   }
 
+  const MAX_BUDGET_GOALS = 50;
+
+  function sanitizeBudgetGoals(raw) {
+    if (!Array.isArray(raw)) return [];
+    return raw.slice(0, MAX_BUDGET_GOALS).map(sanitizeBudgetGoal).filter(Boolean);
+  }
+
+  // One importance level (1-5) per expense category value — a plain object,
+  // not keyed by a MAX-sized array, so the only real guard needed is a cap
+  // on how many distinct keys get stored (matches the category count this
+  // app could plausibly ever have, with generous headroom for custom ones).
+  const MAX_CATEGORY_IMPORTANCE_ENTRIES = 500;
+
+  function sanitizeCategoryImportance(raw) {
+    if (!raw || typeof raw !== 'object') return {};
+    const result = {};
+    for (const [key, val] of Object.entries(raw).slice(0, MAX_CATEGORY_IMPORTANCE_ENTRIES)) {
+      if (typeof key !== 'string') continue;
+      const level = Math.round(Number(val));
+      if (Number.isFinite(level) && level >= 1 && level <= 5) result[key.slice(0, 80)] = level;
+    }
+    return result;
+  }
+
   function sanitizeField(name, value) {
     if (name === 'expenses') return sanitizeExpenses(value);
     if (name === 'budgetGoal') return sanitizeBudgetGoal(value);
+    if (name === 'budgetGoals') return sanitizeBudgetGoals(value);
+    if (name === 'categoryImportance') return sanitizeCategoryImportance(value);
     if (Array.isArray(PROFILE_FIELDS[name])) return Array.isArray(value) ? value : [];
     return value;
   }
