@@ -2620,12 +2620,26 @@ function resolveImportCategory(type, labelText) {
 }
 
 // Same transaction imported twice — e.g. re-importing an old CSV, or a CSV
-// that overlaps data already brought in from another device — reads as
-// identical date + type + description + amount. Rounding the amount to
-// whole cents avoids two entries that are "the same" by eye (45 vs
-// 45.00000000000001) comparing unequal purely from float drift.
-function expenseDedupeKey(date, type, description, amount) {
-  return `${date}|${type}|${(description || '').trim().toLowerCase()}|${Math.round(amount * 100)}`;
+// that overlaps data already brought in from another device — should read
+// as a duplicate even if one field doesn't line up exactly. Amount is the
+// one most likely to drift: it's stored in USD, converted from whatever
+// currency it was actually typed in (see convertToUSD), and two devices
+// doing that conversion at different moments can land a cent or two apart
+// on the same real-world entry. Rather than fuzzy-matching amount itself,
+// an entry counts as a duplicate if at least 3 of these 4 fields match —
+// so a lone mismatched amount (or a lone mismatched anything else) still
+// gets caught via the other three.
+function expenseFieldMatchCount(a, b) {
+  let matches = 0;
+  if (a.date === b.date) matches++;
+  if (a.type === b.type) matches++;
+  if ((a.description || '').trim().toLowerCase() === (b.description || '').trim().toLowerCase()) matches++;
+  if (Math.round(a.amount * 100) === Math.round(b.amount * 100)) matches++;
+  return matches;
+}
+
+function isDuplicateExpenseEntry(candidate, existingList) {
+  return existingList.some((e) => expenseFieldMatchCount(candidate, e) >= 3);
 }
 
 // Wires the Export/Import CSV widget on the Settings page (see index.html —
@@ -2687,21 +2701,19 @@ function setupExpenseCsvIO() {
           return;
         }
 
-        // Skip any row that's a duplicate of an entry already on this
-        // device — matched on date + type + description + amount, not just
-        // appended blindly (see expenseDedupeKey above). Also tracks newly
-        // deduped rows against each other, so two identical rows within the
-        // same file don't both get through on a device that has neither yet.
-        const seenKeys = new Set(expenses.map((e) => expenseDedupeKey(e.date, e.type, e.description, e.amount)));
+        // Skip any row that's a duplicate of an entry already on this device
+        // (3-of-4 field match, not just appended blindly — see
+        // isDuplicateExpenseEntry above). Checked against both the existing
+        // expenses AND whatever's already been accepted from this same file,
+        // so duplicate rows within the file itself don't both get through
+        // on a device that has neither yet.
         const deduped = [];
         let duplicateCount = 0;
         for (const p of parsed) {
-          const key = expenseDedupeKey(p.date, p.type, p.description, p.amount);
-          if (seenKeys.has(key)) {
+          if (isDuplicateExpenseEntry(p, expenses) || isDuplicateExpenseEntry(p, deduped)) {
             duplicateCount++;
             continue;
           }
-          seenKeys.add(key);
           deduped.push(p);
         }
 
