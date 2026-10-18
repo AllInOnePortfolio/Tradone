@@ -4134,32 +4134,14 @@ function computeBudgetChartData(goal, availableWeekly, plan) {
     pacePoints = [[0, 0], [horizonDays, (availableWeekly / WEEK_DAYS) * horizonDays]];
   }
 
-  const paceEndValue = pacePoints[pacePoints.length - 1][1];
-  const yMax = niceAxisMax(Math.max(targetAmount, paceEndValue) || 1);
+  // Pinned to the target itself, not a rounded-up ceiling with headroom
+  // above it — the pace line can never exceed the target by construction
+  // (both branches above either meet it exactly or fall short), so the
+  // target always sits precisely at the chart's top edge rather than
+  // partway up with empty space over it.
+  const yMax = targetAmount;
 
   return { todayIso, neededEndDateIso, neededSpanDays, horizonDays, targetAmount, neededPoints, pacePoints, yMax };
-}
-
-// Standard "nice numbers" rounding (Heckbert's algorithm) — turns an exact
-// max like $1,857.71 into a round $2,000, so axis ticks land on amounts a
-// person would actually write down instead of arbitrary fractions of
-// whatever the data happens to be.
-function niceAxisMax(roughMax) {
-  const exponent = Math.floor(Math.log10(roughMax));
-  const fraction = roughMax / 10 ** exponent;
-  const niceFraction = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 5 ? 5 : 10;
-  return niceFraction * 10 ** exponent;
-}
-
-// Picks a round day-count step (a week, a couple of weeks, a month, a
-// quarter, ...) closest to the chart's span divided into ~5 parts, so X-axis
-// ticks land on "rounded" dates rather than exact fractions of an odd
-// day-count span — the "weeks or months depending on total goal time
-// period" idea applies here, to the axis, rather than the hover readout
-// (which stays exact).
-const BUDGET_CHART_NICE_DAY_STEPS = [1, 2, 3, 5, 7, 14, 21, 30, 45, 60, 90, 120, 180, 270, 365, 545, 730];
-function niceDayStep(rawStep) {
-  return BUDGET_CHART_NICE_DAY_STEPS.reduce((best, s) => (Math.abs(s - rawStep) < Math.abs(best - rawStep) ? s : best));
 }
 
 // Walks a [day, amount] point list and linearly interpolates the value at
@@ -4185,16 +4167,16 @@ const BUDGET_CHART_PAD = { left: 64, right: 14, top: 24, bottom: 34 };
 const BUDGET_CHART_PLOT_W = BUDGET_CHART_W - BUDGET_CHART_PAD.left - BUDGET_CHART_PAD.right;
 const BUDGET_CHART_PLOT_H = BUDGET_CHART_H - BUDGET_CHART_PAD.top - BUDGET_CHART_PAD.bottom;
 
-// A handful of rounded reference points rather than one per day/week — "some
-// measures," not a dense grid — landing on round numbers (niceAxisMax/
-// niceDayStep above) instead of exact fractions of whatever the data
-// happens to be. Always includes the axis's own max as the last tick even
-// if the step doesn't divide into it evenly.
-function buildAxisTicks(maxValue, step) {
-  const ticks = [];
-  for (let v = 0; v <= maxValue + step * 0.001; v += step) ticks.push(v);
-  if (ticks[ticks.length - 1] < maxValue - step * 0.3) ticks.push(maxValue);
-  return ticks;
+// Evenly-spaced reference points — quarters of the axis's span — rather
+// than one per day/week ("some measures," not a dense grid) and rather than
+// rounded-number steps, which left an uneven last gap whenever the max
+// didn't divide evenly by the step. Equal fractions keep every gap between
+// marks the same width by construction, and always land exactly on 0 and
+// the axis's own max (the target amount / the needed date) as the first and
+// last ticks.
+const BUDGET_CHART_TICK_FRACTIONS = [0, 0.25, 0.5, 0.75, 1];
+function buildAxisTicks(maxValue) {
+  return BUDGET_CHART_TICK_FRACTIONS.map((f) => maxValue * f);
 }
 
 // Read by the mousemove handler below (wired once, outside this function,
@@ -4214,18 +4196,20 @@ function renderBudgetChart(goal, availableWeekly, plan) {
   const pacePx = data.pacePoints.map(([d, v]) => `${xPx(d)},${yPx(v)}`).join(' ');
   const targetY = yPx(data.targetAmount);
 
-  const yStep = niceAxisMax(data.yMax / 4);
-  const yTickValues = buildAxisTicks(data.yMax, yStep);
-  const yTicks = yTickValues.map((value) => {
+  const yTickValues = buildAxisTicks(data.yMax);
+  const yTicks = yTickValues.map((value, i) => {
     const y = yPx(value);
+    // The top tick IS the target (yMax is pinned to it, see
+    // computeBudgetChartData) — bolded instead of duplicating it with a
+    // separate "target" label floating at the same height.
+    const isTarget = i === yTickValues.length - 1;
     return `
       <line x1="${BUDGET_CHART_PAD.left - 5}" y1="${y}" x2="${BUDGET_CHART_PAD.left}" y2="${y}" class="budget-chart-tick" />
-      <text x="${BUDGET_CHART_PAD.left - 9}" y="${y + 3}" text-anchor="end" class="budget-chart-axis-label">${fmtCurrency(value, 'USD')}</text>
+      <text x="${BUDGET_CHART_PAD.left - 9}" y="${y + 3}" text-anchor="end" class="budget-chart-axis-label${isTarget ? ' budget-chart-target-label' : ''}">${fmtCurrency(value, 'USD')}</text>
     `;
   }).join('');
 
-  const xStep = niceDayStep(data.horizonDays / 4);
-  const xTickDays = buildAxisTicks(data.horizonDays, xStep);
+  const xTickDays = buildAxisTicks(data.horizonDays);
   const xTicks = xTickDays.map((day) => {
     const x = xPx(day);
     const isFirst = day === xTickDays[0];
@@ -4241,7 +4225,6 @@ function renderBudgetChart(goal, availableWeekly, plan) {
   budgetChartSvgWrapEl.innerHTML = `
     <svg viewBox="0 0 ${BUDGET_CHART_W} ${BUDGET_CHART_H}" class="budget-chart-svg" id="budget-chart-svg">
       <line x1="${BUDGET_CHART_PAD.left}" y1="${targetY}" x2="${BUDGET_CHART_W - BUDGET_CHART_PAD.right}" y2="${targetY}" class="budget-chart-target-guide" />
-      <text x="${BUDGET_CHART_PAD.left + 6}" y="${targetY - 8}" class="budget-chart-axis-label budget-chart-target-label">${fmtCurrency(data.targetAmount, 'USD')}</text>
       <polyline points="${pacePx}" class="budget-chart-line budget-chart-line-pace" />
       <polyline points="${neededPx}" class="budget-chart-line budget-chart-line-needed" />
       <line x1="${BUDGET_CHART_PAD.left}" y1="${BUDGET_CHART_PAD.top}" x2="${BUDGET_CHART_PAD.left}" y2="${axisBottom}" class="budget-chart-axis-line" />
