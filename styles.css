@@ -3508,13 +3508,13 @@ body.dragging-active {
 }
 
 .budget-chart-axis-line {
-  stroke: rgba(217, 119, 6, 0.65);
-  stroke-width: 2;
+  stroke: rgba(217, 119, 6, 0.8);
+  stroke-width: 3;
 }
 
 .budget-chart-tick {
-  stroke: rgba(217, 119, 6, 0.65);
-  stroke-width: 1.5;
+  stroke: rgba(217, 119, 6, 0.8);
+  stroke-width: 2;
 }
 
 .budget-chart-axis-label {
