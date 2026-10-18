@@ -4221,11 +4221,16 @@ function renderBudgetChart(goal, availableWeekly, plan) {
     const y = yPx(value);
     // The top tick IS the target (yMax is pinned to it, see
     // computeBudgetChartData) — bolded instead of duplicating it with a
-    // separate "target" label floating at the same height.
+    // separate "target" label floating at the same height, and (unlike the
+    // other ticks, which are fractions of the target with nothing "original"
+    // to echo) shown via the goal's own remembered entry currency so it
+    // matches the TARGET AMOUNT stat card exactly rather than a second,
+    // separately-rounded USD round trip of the same number.
     const isTarget = i === yTickValues.length - 1;
+    const label = isTarget ? formatEnteredCurrency(value, goal.targetAmountOriginal, goal.entryCurrency) : fmtCurrency(value, 'USD');
     return `
       <line x1="${BUDGET_CHART_PAD.left - 5}" y1="${y}" x2="${BUDGET_CHART_PAD.left}" y2="${y}" class="budget-chart-tick" />
-      <text x="${BUDGET_CHART_PAD.left - 9}" y="${y + 3}" text-anchor="end" class="budget-chart-axis-label${isTarget ? ' budget-chart-target-label' : ''}">${fmtCurrency(value, 'USD')}</text>
+      <text x="${BUDGET_CHART_PAD.left - 9}" y="${y + 3}" text-anchor="end" class="budget-chart-axis-label${isTarget ? ' budget-chart-target-label' : ''}">${label}</text>
     `;
   }).join('');
 
@@ -4563,7 +4568,7 @@ function renderBudgetSuggestions() {
         lines.push(`<p class="budget-suggestions-goal-line">${t('budget.goalComparisonLine')
           .replace('{pct}', pct < 1 ? pct.toFixed(2) : pct.toFixed(1))
           .replace('{name}', g.name || t('budget.unnamedGoal').replace('{n}', i + 1))
-          .replace('{target}', fmtCurrency(g.targetAmount, 'USD'))}</p>`);
+          .replace('{target}', formatEnteredCurrency(g.targetAmount, g.targetAmountOriginal, g.entryCurrency))}</p>`);
       });
     }
   }
