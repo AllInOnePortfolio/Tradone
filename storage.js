@@ -186,6 +186,14 @@ const Vault = (() => {
       category: typeof e?.category === 'string' ? e.category.slice(0, 80) : 'other',
       description: typeof e?.description === 'string' ? e.description.slice(0, 200) : '',
       amount: Number.isFinite(e?.amount) ? e.amount : 0,
+      // The exact figure/currency this entry was originally typed in —
+      // kept alongside the canonical USD `amount` purely so it can be
+      // echoed back exactly if the display currency is ever switched back
+      // to this one, instead of showing a value round-tripped through USD
+      // (which picks up rounding and exchange-rate drift). Optional: older
+      // entries from before this existed just fall back to the USD figure.
+      amountOriginal: Number.isFinite(e?.amountOriginal) ? e.amountOriginal : null,
+      amountCurrency: typeof e?.amountCurrency === 'string' ? e.amountCurrency.slice(0, 10) : null,
       date: typeof e?.date === 'string' ? e.date.slice(0, 10) : '',
       accountId: typeof e?.accountId === 'string' ? e.accountId : null,
       notes: typeof e?.notes === 'string' ? e.notes.slice(0, MAX_EXPENSE_NOTE_LENGTH) : undefined,
@@ -204,10 +212,22 @@ const Vault = (() => {
   function sanitizeBudgetGoal(raw) {
     if (!raw || typeof raw !== 'object') return null;
     const num = (v) => (Number.isFinite(v) && v >= 0 ? v : 0);
+    const numOrNull = (v) => (v == null ? null : num(v));
     const categoryBudget = {};
     if (raw.manualCategoryBudget && typeof raw.manualCategoryBudget === 'object') {
       for (const [key, val] of Object.entries(raw.manualCategoryBudget)) {
         if (typeof key === 'string') categoryBudget[key.slice(0, 80)] = num(val);
+      }
+    }
+    // Same "remember exactly what was typed" idea as sanitizeExpenses'
+    // amountOriginal/amountCurrency — every currency figure on a goal is
+    // entered in one sitting under whatever the display currency was at
+    // the time, so one shared entryCurrency covers all of them rather than
+    // tracking a currency per field.
+    const categoryBudgetOriginal = {};
+    if (raw.manualCategoryBudgetOriginal && typeof raw.manualCategoryBudgetOriginal === 'object') {
+      for (const [key, val] of Object.entries(raw.manualCategoryBudgetOriginal)) {
+        if (typeof key === 'string') categoryBudgetOriginal[key.slice(0, 80)] = num(val);
       }
     }
     return {
@@ -222,6 +242,11 @@ const Vault = (() => {
       historyWindowMonths: [1, 3, 6].includes(raw.historyWindowMonths) ? raw.historyWindowMonths : 3,
       manualIncome: raw.manualIncome == null ? null : num(raw.manualIncome),
       manualCategoryBudget: Object.keys(categoryBudget).length ? categoryBudget : null,
+      entryCurrency: typeof raw.entryCurrency === 'string' ? raw.entryCurrency.slice(0, 10) : null,
+      targetAmountOriginal: numOrNull(raw.targetAmountOriginal),
+      contributionAmountOriginal: numOrNull(raw.contributionAmountOriginal),
+      manualIncomeOriginal: numOrNull(raw.manualIncomeOriginal),
+      manualCategoryBudgetOriginal: Object.keys(categoryBudgetOriginal).length ? categoryBudgetOriginal : null,
       updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : new Date().toISOString()
     };
   }

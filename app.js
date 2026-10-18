@@ -2620,6 +2620,8 @@ expenseForm.addEventListener('submit', (event) => {
   }
 
   const amount = convertToUSD(enteredAmount, displayCurrency);
+  const amountOriginal = enteredAmount;
+  const amountCurrency = displayCurrency;
   const accountId = expenseAccountSelect.value || null;
   // Remember whichever account (including "None") was just picked, so the
   // next entry defaults to it too instead of starting back at "None" —
@@ -2627,7 +2629,7 @@ expenseForm.addEventListener('submit', (event) => {
   expenseDefaultAccountId = accountId || '';
   localStorage.setItem(EXPENSE_DEFAULT_ACCOUNT_KEY, expenseDefaultAccountId);
   expenses = [
-    { id: crypto.randomUUID(), type: expenseFormType, category, description, amount, date, accountId, createdAt: new Date().toISOString() },
+    { id: crypto.randomUUID(), type: expenseFormType, category, description, amount, amountOriginal, amountCurrency, date, accountId, createdAt: new Date().toISOString() },
     ...expenses
   ];
   saveExpenses();
@@ -3295,7 +3297,7 @@ function renderExpenseEntryCard(e) {
   const { type, cat } = expenseEntryTypeAndCategory(e);
   const label = categoryLabel(cat, type);
   const dateLabel = parseISODateLocal(e.date).toLocaleDateString('en-US', { dateStyle: 'medium' });
-  const amountLabel = `${type === 'earning' ? '+' : ''}${formatCurrency(e.amount)}`;
+  const amountLabel = `${type === 'earning' ? '+' : ''}${formatEnteredCurrency(e.amount, e.amountOriginal, e.amountCurrency)}`;
   return `
     <article class="account-card" data-expense-id="${e.id}">
       <div class="expense-entry-row">
@@ -3907,7 +3909,12 @@ const DEFAULT_BUDGET_GOAL = {
   dataSource: 'tracked',
   historyWindowMonths: 3,
   manualIncome: null,
-  manualCategoryBudget: null
+  manualCategoryBudget: null,
+  entryCurrency: null,
+  targetAmountOriginal: null,
+  contributionAmountOriginal: null,
+  manualIncomeOriginal: null,
+  manualCategoryBudgetOriginal: null
 };
 
 const budgetGoalTabsEl             = document.getElementById('budget-goal-tabs');
@@ -4059,12 +4066,12 @@ function setBudgetToggleActive(toggleEl, datasetKey, value) {
 // ones, same categoriesForType('expense') accessor the Add-expense form
 // uses) — regenerated on every render rather than kept as static markup, so
 // a category added/renamed/hidden on the Expenses tab is reflected here too.
-function renderBudgetCategoryInputs(prefill) {
+function renderBudgetCategoryInputs(prefill, prefillOriginal, entryCurrency) {
   const cats = categoriesForType('expense');
   budgetCategoryInputsEl.innerHTML = cats
     .map((cat) => {
       const usd = prefill?.[cat.value] || 0;
-      const value = usd ? convertToDisplayCurrency(usd, 'USD') : 0;
+      const value = usd ? amountForInput(usd, prefillOriginal?.[cat.value], entryCurrency) : 0;
       return `
         <div class="budget-category-input-row">
           <label>${categorySwatchHtml(cat)}<span>${categoryLabel(cat, 'expense')}</span></label>
@@ -4077,23 +4084,36 @@ function renderBudgetCategoryInputs(prefill) {
 
 function readBudgetFormValues() {
   const categoryBudget = {};
+  const categoryBudgetOriginal = {};
   budgetCategoryInputsEl.querySelectorAll('input[data-category]').forEach((input) => {
-    categoryBudget[input.dataset.category] = convertToUSD(Number(input.value) || 0, displayCurrency);
+    const raw = Number(input.value) || 0;
+    categoryBudget[input.dataset.category] = convertToUSD(raw, displayCurrency);
+    categoryBudgetOriginal[input.dataset.category] = raw;
   });
-  const contributionAmount = budgetContributionAmountInput.value === '' ? null : Number(budgetContributionAmountInput.value);
-  const manualIncome = budgetManualIncomeInput.value === '' ? null : Number(budgetManualIncomeInput.value);
+  const contributionAmountRaw = budgetContributionAmountInput.value === '' ? null : Number(budgetContributionAmountInput.value);
+  const manualIncomeRaw = budgetManualIncomeInput.value === '' ? null : Number(budgetManualIncomeInput.value);
+  const targetAmountRaw = Number(budgetTargetAmountInput.value) || 0;
   return {
     id: selectedBudgetGoalId || crypto.randomUUID(),
     name: budgetGoalNameInput.value.trim(),
-    targetAmount: convertToUSD(Number(budgetTargetAmountInput.value) || 0, displayCurrency),
+    targetAmount: convertToUSD(targetAmountRaw, displayCurrency),
     solveMode: budgetSolveToggle.querySelector('.budget-toggle-btn.active')?.dataset.solve || 'byDate',
     deadline: budgetDeadlineTrigger.dataset.date || null,
-    contributionAmount: contributionAmount == null ? null : convertToUSD(contributionAmount, displayCurrency),
+    contributionAmount: contributionAmountRaw == null ? null : convertToUSD(contributionAmountRaw, displayCurrency),
     contributionPeriod: budgetContributionPeriodSelect.value || 'week',
     dataSource: budgetSourceToggle.querySelector('.budget-toggle-btn.active')?.dataset.source || 'tracked',
     historyWindowMonths: Number(budgetHistoryWindowSelect.value) || 3,
-    manualIncome: manualIncome == null ? null : convertToUSD(manualIncome, displayCurrency),
+    manualIncome: manualIncomeRaw == null ? null : convertToUSD(manualIncomeRaw, displayCurrency),
     manualCategoryBudget: categoryBudget,
+    // Remembers exactly what was typed and in which currency, same idea as
+    // expenses' amountOriginal/amountCurrency — see formatEnteredCurrency/
+    // amountForInput — so switching the display currency back to this one
+    // later re-shows these exact figures instead of a USD round trip.
+    entryCurrency: displayCurrency,
+    targetAmountOriginal: targetAmountRaw,
+    contributionAmountOriginal: contributionAmountRaw,
+    manualIncomeOriginal: manualIncomeRaw,
+    manualCategoryBudgetOriginal: categoryBudgetOriginal,
     updatedAt: new Date().toISOString()
   };
 }
@@ -4312,7 +4332,7 @@ function renderBudgetResults(goal) {
     return;
   }
 
-  budgetTargetValueEl.textContent = fmtCurrency(goal.targetAmount, 'USD');
+  budgetTargetValueEl.textContent = formatEnteredCurrency(goal.targetAmount, goal.targetAmountOriginal, goal.entryCurrency);
 
   const { weekly: availableWeekly, insufficientData } = computeAvailableWeekly(goal);
   const plan = computeBudgetPlan(goal, availableWeekly);
@@ -4403,22 +4423,22 @@ function renderBudget() {
   const goal = budgetGoals.find((g) => g.id === selectedBudgetGoalId) || DEFAULT_BUDGET_GOAL;
 
   budgetGoalNameInput.value = goal.name || '';
-  budgetTargetAmountInput.value = goal.targetAmount ? convertToDisplayCurrency(goal.targetAmount, 'USD') : '';
+  budgetTargetAmountInput.value = goal.targetAmount ? amountForInput(goal.targetAmount, goal.targetAmountOriginal, goal.entryCurrency) : '';
 
   setBudgetToggleActive(budgetSolveToggle, 'solve', goal.solveMode);
   budgetDeadlineFieldEl.style.display = goal.solveMode === 'byRate' ? 'none' : '';
   budgetContributionFieldEl.style.display = goal.solveMode === 'byRate' ? '' : 'none';
   budgetDeadlineTrigger.dataset.date = goal.deadline || '';
   budgetDeadlineTrigger.querySelector('.edit-field-date-trigger-label').textContent = formatDatePickerDisplay(goal.deadline || '');
-  budgetContributionAmountInput.value = goal.contributionAmount ? convertToDisplayCurrency(goal.contributionAmount, 'USD') : '';
+  budgetContributionAmountInput.value = goal.contributionAmount ? amountForInput(goal.contributionAmount, goal.contributionAmountOriginal, goal.entryCurrency) : '';
   budgetContributionPeriodSelect.value = goal.contributionPeriod || 'week';
 
   setBudgetToggleActive(budgetSourceToggle, 'source', goal.dataSource);
   budgetHistoryFieldEl.style.display = goal.dataSource === 'manual' ? 'none' : '';
   budgetManualFieldsEl.style.display = goal.dataSource === 'manual' ? '' : 'none';
   budgetHistoryWindowSelect.value = String(goal.historyWindowMonths || 3);
-  budgetManualIncomeInput.value = goal.manualIncome ? convertToDisplayCurrency(goal.manualIncome, 'USD') : '';
-  renderBudgetCategoryInputs(goal.manualCategoryBudget);
+  budgetManualIncomeInput.value = goal.manualIncome ? amountForInput(goal.manualIncome, goal.manualIncomeOriginal, goal.entryCurrency) : '';
+  renderBudgetCategoryInputs(goal.manualCategoryBudget, goal.manualCategoryBudgetOriginal, goal.entryCurrency);
 
   renderBudgetResults(goal);
   renderBudgetSuggestions();
@@ -4827,6 +4847,30 @@ function accountTypeIconHtml(type) {
 
 function formatCurrency(value) {
   return formatConvertedCurrency(convertToDisplayCurrency(value, 'USD'));
+}
+
+// When something (an expense amount, a budget goal figure) was typed in a
+// specific currency, the exact original figure is kept alongside the
+// canonical USD value purely so it can reappear exactly if the display
+// currency is ever switched back to that one — a round trip through USD and
+// back (convertToUSD then convertToDisplayCurrency) picks up rounding and
+// whatever the exchange rate has drifted to since, so e.g. 100.00 entered
+// in EUR can otherwise come back as 99.97. Falls back to the normal
+// USD-based conversion whenever the current display currency isn't the one
+// this figure was originally entered in (including older data saved before
+// this existed, which has no original to fall back to).
+function formatEnteredCurrency(usdAmount, originalAmount, originalCurrency) {
+  if (originalCurrency && originalCurrency === displayCurrency && originalAmount != null) {
+    return formatMoney(originalAmount, displayCurrency);
+  }
+  return formatCurrency(usdAmount);
+}
+
+// Same idea as formatEnteredCurrency, but returning a plain number for
+// repopulating an <input> rather than a formatted string.
+function amountForInput(usdAmount, originalAmount, originalCurrency) {
+  if (originalCurrency && originalCurrency === displayCurrency && originalAmount != null) return originalAmount;
+  return convertToDisplayCurrency(usdAmount, 'USD');
 }
 
 // ── Unified card rendering ──────────────────────────────────────────────────
