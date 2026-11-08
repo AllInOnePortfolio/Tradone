@@ -5420,7 +5420,12 @@ const walletForm         = document.getElementById('wallet-form');
 const walletAddressInput = document.getElementById('wallet-address');
 const walletLoadBtn      = document.getElementById('wallet-load-btn');
 
+// Keyed "<chain>:<address>" (see sourceKey) — one entry per address per
+// chain. It used to be keyed by chain alone, so a second Litecoin (or any
+// same-chain) address silently replaced the first instead of adding to it,
+// and on login only the last saved address per chain survived.
 const cryptoSources = {};
+const sourceKey = (chain, address) => `${chain}:${address}`;
 
 // When the Crypto Portfolio card's data was last actually fetched/refreshed
 // (a chain reload or a manual-position price refresh) — shown as a "last
@@ -5457,21 +5462,24 @@ async function fetchJson(url, timeoutMs) {
 async function loadChainPositions(chain, address) {
   if (chain === 'ethereum') {
     const data = await fetchJson(`${API_BASE}/api/wallet/${address}`, 60_000);
-    cryptoSources.wallet = { address, positions: data.positions.map((p) => ({ ...p, kind: 'wallet' })) };
+    cryptoSources[sourceKey('wallet', address)] = {
+      address,
+      positions: data.positions.map((p) => ({ ...p, kind: 'wallet', walletAddress: address }))
+    };
     return;
   }
   if (chain === 'solana') {
     const data = await fetchJson(`${API_BASE}/api/solana/${address}`, 60_000);
-    cryptoSources.solana = {
+    cryptoSources[sourceKey('solana', address)] = {
       address,
-      positions: data.positions.map((p) => ({ ...p, kind: p.type === 'staked' ? 'staked-sol' : 'sol-liquid' }))
+      positions: data.positions.map((p) => ({ ...p, kind: p.type === 'staked' ? 'staked-sol' : 'sol-liquid', walletAddress: address }))
     };
     return;
   }
   const data = await fetchJson(`${API_BASE}/api/chain/${chain}/${address}`, 30_000);
-  cryptoSources[chain] = {
+  cryptoSources[sourceKey(chain, address)] = {
     address,
-    positions: data.positions.map((p) => ({ ...p, kind: 'simple-chain', chainId: chain }))
+    positions: data.positions.map((p) => ({ ...p, kind: 'simple-chain', chainId: chain, walletAddress: address }))
   };
 }
 
@@ -5975,7 +5983,21 @@ function shortId(str, front = 6, back = 4) {
 // Stable per-position id used for the manual hide/unhide feature — has to
 // survive re-fetching the same address, so it's built from on-chain
 // identifiers (contract/mint/stake account) rather than array position.
+// On-chain ids carry the wallet address ("…@<address>") so the same coin in
+// two different wallets of the same chain (e.g. two LTC addresses) gets its
+// own hide state and cost basis. Ids saved before that change lack the
+// suffix — legacyCryptoPositionId reproduces them so existing hides and
+// cost-basis entries keep applying (see isPositionHidden/applyCostBasisOverride).
 function cryptoPositionId(pos) {
+  const legacy = legacyCryptoPositionId(pos);
+  return pos.walletAddress && pos.kind !== 'manual' ? `${legacy}@${pos.walletAddress}` : legacy;
+}
+
+function isPositionHidden(pos) {
+  return hiddenPositionIds.has(cryptoPositionId(pos)) || hiddenPositionIds.has(legacyCryptoPositionId(pos));
+}
+
+function legacyCryptoPositionId(pos) {
   if (pos.kind === 'staked-sol') return `sol-stake-${pos.stakeAccount}`;
   if (pos.kind === 'sol-liquid') return `sol-liquid-${pos.mint || 'native'}`;
   // pos.pool distinguishes e.g. staked NEAR (one row per delegated validator
@@ -6010,7 +6032,7 @@ function withRecomputedGain(pos, priceAtFirstReceived) {
 //    user set by hand via "Set date" (see the .set-date-btn handler below).
 function applyCostBasisOverride(pos) {
   const id = cryptoPositionId(pos);
-  const cached = costBasisOverrides[id];
+  const cached = costBasisOverrides[id] ?? costBasisOverrides[legacyCryptoPositionId(pos)];
 
   if (pos.firstReceivedDate) {
     if (pos.priceAtFirstReceived != null) {
@@ -6203,8 +6225,8 @@ function buildCryptoPortfolioCardSpec() {
     ...manualCryptoPositions.map(manualPositionToPosition)
   ];
 
-  const hiddenCount = rawPositions.filter((p) => hiddenPositionIds.has(cryptoPositionId(p))).length;
-  const allPositions = rawPositions.filter((p) => !hiddenPositionIds.has(cryptoPositionId(p)));
+  const hiddenCount = rawPositions.filter(isPositionHidden).length;
+  const allPositions = rawPositions.filter((p) => !isPositionHidden(p));
 
   const totalCurrentValue = allPositions.reduce((s, p) => s + (p.currentValue ?? 0), 0);
   const knownGain = allPositions.filter((p) => p.gainAbsolute != null);
@@ -6321,7 +6343,11 @@ function buildCryptoPortfolioCardSpec() {
   // Addresses are only ever shown once the card is expanded into its full
   // table (see the wallet-addresses block in detailHtml below) — the always-
   // visible card header just says how many sources are connected.
-  const sourcesWithAddress = Object.values(cryptoSources).filter((source) => source.address);
+  // One entry per distinct address — a 0x address is loaded as three sources
+  // (Ethereum, BSC, Optimism) but is still just one wallet.
+  const sourcesWithAddress = [...new Map(
+    Object.values(cryptoSources).filter((source) => source.address).map((source) => [source.address, source])
+  ).values()];
   const meta = sourcesWithAddress.length
     ? (currentLanguage === 'ru' ? `Подключено кошельков: ${sourcesWithAddress.length}`
       : currentLanguage === 'zh' ? `已连接 ${sourcesWithAddress.length} 个钱包`
@@ -7858,7 +7884,7 @@ function getHeldCryptoSymbols() {
     ...manualCryptoPositions.map(manualPositionToPosition)
   ];
   const symbols = rawPositions
-    .filter((p) => !hiddenPositionIds.has(cryptoPositionId(p)) && isMeaningfulValue(p.currentValue))
+    .filter((p) => !isPositionHidden(p) && isMeaningfulValue(p.currentValue))
     .map((p) => p.symbol)
     .filter(Boolean);
   return [...new Set(symbols)];
