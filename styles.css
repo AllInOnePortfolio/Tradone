@@ -1441,6 +1441,62 @@ body.dragging-active {
   color: white;
 }
 
+/* Range mode (expense export): days strictly between the picked first and
+   last day get a soft tint of the .selected gradient's colors. */
+.date-picker-day.in-range {
+  background: rgba(190, 18, 60, 0.22);
+  border-radius: 4px;
+}
+
+.date-picker-range-footer {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+
+.date-picker-range-hint {
+  margin: 0;
+  color: #c2a3a8;
+  font-size: 0.82rem;
+}
+
+.date-picker-range-confirm {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px;
+  background: linear-gradient(135deg, #be123c, #d97706);
+  color: white;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.date-picker-range-confirm[disabled] {
+  background: rgba(255, 255, 255, 0.08);
+  color: #7a6064;
+  cursor: not-allowed;
+}
+
+.date-picker-range-all {
+  border: 0;
+  background: transparent;
+  color: #a8888d;
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 2px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.date-picker-range-all:hover {
+  color: #fbbf24;
+}
+
 .date-picker-day[disabled] {
   color: #5c4448;
   cursor: not-allowed;
@@ -2174,27 +2230,6 @@ body.dragging-active {
   margin-top: 16px;
   display: grid;
   gap: 10px;
-}
-
-.expense-export-period {
-  display: grid;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-/* The custom range reuses .expense-custom-range (Expenses page), whose own
-   bottom margin would double up with the gap above the buttons here. */
-.expense-export-period .expense-custom-range {
-  margin-bottom: 0;
-  flex-wrap: wrap;
-}
-
-.expense-export-period-select {
-  display: grid;
-  gap: 6px;
-  max-width: 260px;
-  color: #e8d5d8;
-  font-size: 0.95rem;
 }
 
 .expense-import-review label {

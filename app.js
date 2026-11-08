@@ -258,7 +258,7 @@ const TRANSLATIONS = {
     'expenses.accountNote': "Linking an account deducts (or adds, for an earning) this amount from its balance and refreshes its daily return estimate.",
     'expenses.addExpenseBtn': 'Add expense',
     'expenses.ioHeading': 'Backup & import',
-    'expenses.ioNote': "Download your entries as a CSV file — all of them, or just a chosen period — or bring one in from elsewhere. Each imported row can be linked to an account, same as adding one by hand.",
+    'expenses.ioNote': "Export opens a calendar — pick the first and last day to download, or choose all time. Import brings a CSV in from elsewhere; each imported row can be linked to an account, same as adding one by hand.",
     'expenses.exportBtn': 'Export as CSV',
     'expenses.importBtn': 'Import from CSV',
     'expenses.importAccountNote': "If you link an account, every imported row adjusts its balance — the same as adding each one by hand.",
@@ -280,11 +280,11 @@ const TRANSLATIONS = {
     'expenses.periodMonth': 'This month',
     'expenses.periodAll': 'All time',
     'expenses.periodCustom': 'Custom range',
-    'expenses.exportPeriodLabel': "Export period",
-    'expenses.periodLastMonth': "Last month",
-    'expenses.periodYear': "This year",
     'expenses.exportEmpty': "No entries in the selected period.",
-    'expenses.exportRangeInvalid': "The \"From\" date is after the \"To\" date.",
+    'expenses.exportPickStart': "Pick the first day",
+    'expenses.exportPickEnd': "Now pick the last day",
+    'expenses.exportConfirm': "Export this period",
+    'expenses.exportAllTime': "or export all time",
     'expenses.weekTotalLabel': 'Total',
     'expenses.fromLabel': 'From',
     'expenses.toLabel': 'To',
@@ -586,7 +586,7 @@ const TRANSLATIONS = {
     'expenses.accountNote': 'Привязка счёта спишет (или начислит, для дохода) эту сумму с его баланса и обновит оценку дневного дохода.',
     'expenses.addExpenseBtn': 'Добавить расход',
     'expenses.ioHeading': 'Резервная копия и импорт',
-    'expenses.ioNote': "Скачайте записи в виде CSV-файла — все или только за выбранный период — или загрузите файл откуда-то ещё. Каждую импортированную строку можно привязать к счёту, как при добавлении вручную.",
+    'expenses.ioNote': "Экспорт открывает календарь — выберите первый и последний день или всё время. Импорт загружает CSV-файл откуда-то ещё; каждую импортированную строку можно привязать к счёту, как при добавлении вручную.",
     'expenses.exportBtn': 'Экспорт в CSV',
     'expenses.importBtn': 'Импорт из CSV',
     'expenses.importAccountNote': 'Если вы привяжете счёт, каждая импортированная запись изменит его баланс — так же, как при добавлении вручную.',
@@ -608,11 +608,11 @@ const TRANSLATIONS = {
     'expenses.periodMonth': 'Этот месяц',
     'expenses.periodAll': 'Всё время',
     'expenses.periodCustom': 'Свой период',
-    'expenses.exportPeriodLabel': "Период экспорта",
-    'expenses.periodLastMonth': "Прошлый месяц",
-    'expenses.periodYear': "Этот год",
     'expenses.exportEmpty': "В выбранном периоде нет записей.",
-    'expenses.exportRangeInvalid': "Дата «С» позже даты «По».",
+    'expenses.exportPickStart': "Выберите первый день",
+    'expenses.exportPickEnd': "Теперь выберите последний день",
+    'expenses.exportConfirm': "Экспортировать период",
+    'expenses.exportAllTime': "или экспортировать всё время",
     'expenses.weekTotalLabel': 'Итого',
     'expenses.fromLabel': 'С',
     'expenses.toLabel': 'По',
@@ -913,7 +913,7 @@ const TRANSLATIONS = {
     'expenses.accountNote': '关联账户会从其余额中扣除（收入则增加）此金额，并刷新其每日收益估算。',
     'expenses.addExpenseBtn': '添加支出',
     'expenses.ioHeading': '备份与导入',
-    'expenses.ioNote': "将记录下载为 CSV 文件 —— 全部或仅所选期间 —— 或从其他地方导入。每条导入的记录都可以像手动添加一样关联到一个账户。",
+    'expenses.ioNote': "导出会打开日历 —— 选择第一天和最后一天，或选择全部时间。导入可从其他地方载入 CSV；每条导入的记录都可以像手动添加一样关联到一个账户。",
     'expenses.exportBtn': '导出为 CSV',
     'expenses.importBtn': '从 CSV 导入',
     'expenses.importAccountNote': '如果关联账户，每条导入的记录都会像手动添加一样调整其余额。',
@@ -935,11 +935,11 @@ const TRANSLATIONS = {
     'expenses.periodMonth': '本月',
     'expenses.periodAll': '全部时间',
     'expenses.periodCustom': '自定义范围',
-    'expenses.exportPeriodLabel': "导出期间",
-    'expenses.periodLastMonth': "上个月",
-    'expenses.periodYear': "今年",
     'expenses.exportEmpty': "所选期间内没有记录。",
-    'expenses.exportRangeInvalid': "“从”日期晚于“至”日期。",
+    'expenses.exportPickStart': "选择第一天",
+    'expenses.exportPickEnd': "现在选择最后一天",
+    'expenses.exportConfirm': "导出此期间",
+    'expenses.exportAllTime': "或导出全部时间",
     'expenses.weekTotalLabel': '合计',
     'expenses.fromLabel': '从',
     'expenses.toLabel': '至',
@@ -2702,34 +2702,10 @@ function expensesToCsv(entries) {
   return [header, ...rows].map((row) => row.map(escapeCsvField).join(',')).join('\r\n');
 }
 
-const expenseExportPeriodSelect = document.getElementById('settings-expense-export-period');
-const expenseExportRange        = document.getElementById('settings-expense-export-range');
-const expenseExportFromTrigger  = document.getElementById('settings-expense-export-from-trigger');
-const expenseExportToTrigger    = document.getElementById('settings-expense-export-to-trigger');
-
-// [start, end] yyyy-mm-dd bounds (inclusive) for the export's own Period
-// picker — same shape as getSelectedExpensePeriod (a null bound is open on
-// that side), but kept separate since the export period is its own choice,
-// independent of whatever the Expenses page happens to be filtered to.
-function getExpenseExportPeriod() {
-  const today = parseISODateLocal(todayLocalISODate());
-  const y = today.getFullYear();
-  const m = today.getMonth();
-  switch (expenseExportPeriodSelect.value) {
-    case 'month':      return [toISODate(new Date(y, m, 1)), toISODate(new Date(y, m + 1, 0))];
-    case 'last-month': return [toISODate(new Date(y, m - 1, 1)), toISODate(new Date(y, m, 0))];
-    case 'year':       return [toISODate(new Date(y, 0, 1)), toISODate(new Date(y, 11, 31))];
-    case 'custom':     return [expenseExportFromTrigger.dataset.date || null, expenseExportToTrigger.dataset.date || null];
-    default:           return [null, null];
-  }
-}
-
-function downloadExpensesCsv() {
-  const [start, end] = getExpenseExportPeriod();
-  if (start && end && start > end) {
-    alert(t('expenses.exportRangeInvalid'));
-    return;
-  }
+// start/end are inclusive yyyy-mm-dd bounds picked on the Export button's
+// range calendar (see openDatePicker's `range` option), or both null for
+// "All time".
+function downloadExpensesCsv(start, end) {
   const entries = expenses
     .filter((e) => isExpenseWithinPeriod(e.date, start, end))
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -2743,10 +2719,8 @@ function downloadExpensesCsv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  // An open bound falls back to the earliest entry / today, so the filename
-  // always says exactly which dates the file covers.
-  a.download = start || end
-    ? `tradone-expenses-${start || entries[0].date}_to_${end || todayLocalISODate()}.csv`
+  a.download = start && end
+    ? `tradone-expenses-${start}_to_${end}.csv`
     : `tradone-expenses-${todayLocalISODate()}.csv`;
   document.body.appendChild(a);
   a.click();
@@ -2854,18 +2828,11 @@ function setupExpenseCsvIO() {
     refreshCustomSelect(importAccountSelect);
   }
 
-  enhanceSelect(expenseExportPeriodSelect);
-  expenseExportPeriodSelect.addEventListener('change', () => {
-    expenseExportRange.style.display = expenseExportPeriodSelect.value === 'custom' ? '' : 'none';
+  // Export opens the shared calendar in range mode: pick a first and last
+  // day (or "All time"), and the download starts from there.
+  exportBtn.addEventListener('click', () => {
+    openDatePicker(exportBtn, { range: { onPick: downloadExpensesCsv } });
   });
-  // Settings had no date triggers before this, so it needs its own delegated
-  // opener — same per-page wiring as pageExpenses/pageBudget's.
-  pageSettings.addEventListener('click', (event) => {
-    const dateTrigger = event.target.closest('.edit-field-date-trigger');
-    if (dateTrigger) openDatePicker(dateTrigger);
-  });
-
-  exportBtn.addEventListener('click', downloadExpensesCsv);
   importBtn.addEventListener('click', () => importFile.click());
 
   importFile.addEventListener('change', () => {
@@ -5698,7 +5665,7 @@ function renderDatePicker() {
 }
 
 function renderDatePickerDayGrid() {
-  const { viewYear, viewMonth, selectedIso, maxIso, minIso, popup } = datePickerState;
+  const { viewYear, viewMonth, selectedIso, maxIso, minIso, popup, range } = datePickerState;
   // calendarColumnIndex/calendarWeekdayLabels (defined above, in the
   // Expenses section) apply the same Monday/Sunday week-start setting here
   // as they do to the Expenses calendar view — every date picker in the app
@@ -5714,7 +5681,10 @@ function renderDatePickerDayGrid() {
     const iso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const disabled = (maxIso && iso > maxIso) || (minIso && iso < minIso);
     const classes = ['date-picker-day'];
-    if (iso === selectedIso) classes.push('selected');
+    if (range) {
+      if (iso === range.start || iso === range.end) classes.push('selected');
+      else if (range.start && range.end && iso > range.start && iso < range.end) classes.push('in-range');
+    } else if (iso === selectedIso) classes.push('selected');
     if (iso === todayIso) classes.push('today');
     cells += `<button type="button" class="${classes.join(' ')}" data-date="${iso}" ${disabled ? 'disabled' : ''}>${day}</button>`;
   }
@@ -5730,7 +5700,20 @@ function renderDatePickerDayGrid() {
     </div>
     <div class="date-picker-weekdays">${calendarWeekdayLabels().map((w) => `<span>${w}</span>`).join('')}</div>
     <div class="date-picker-grid">${cells}</div>
-    ${selectedIso ? `<button type="button" class="date-picker-clear">Clear date</button>` : ''}
+    ${range ? renderDatePickerRangeFooter(range) : selectedIso ? `<button type="button" class="date-picker-clear">Clear date</button>` : ''}
+  `;
+}
+
+function renderDatePickerRangeFooter({ start, end }) {
+  const hint = !start ? t('expenses.exportPickStart')
+    : !end ? t('expenses.exportPickEnd')
+    : `${formatDatePickerDisplay(start)} – ${formatDatePickerDisplay(end)}`;
+  return `
+    <div class="date-picker-range-footer">
+      <p class="date-picker-range-hint">${hint}</p>
+      <button type="button" class="date-picker-range-confirm" data-action="range-confirm" ${start && end ? '' : 'disabled'}>${t('expenses.exportConfirm')}</button>
+      <button type="button" class="date-picker-range-all" data-action="range-all">${t('expenses.exportAllTime')}</button>
+    </div>
   `;
 }
 
@@ -5790,7 +5773,29 @@ function positionDatePicker() {
   popup.style.left = `${Math.max(8, left)}px`;
 }
 
-function openDatePicker(trigger) {
+// Range mode (options.range = { onPick(start, end) }): instead of picking one
+// date for a date field, the first click sets the start and the second the
+// end (clicking an earlier day restarts from there); a footer offers "All
+// time" and a confirm button that hands the bounds to onPick — null/null
+// for all time. Used by the Settings page's expense Export button.
+function handleRangeDayClick(iso) {
+  const r = datePickerState.range;
+  if (!r.start || r.end || iso < r.start) {
+    r.start = iso;
+    r.end = null;
+  } else {
+    r.end = iso;
+  }
+  renderDatePicker();
+}
+
+function finishRangePick(start, end) {
+  const { onPick } = datePickerState.range;
+  closeDatePicker();
+  onPick(start, end);
+}
+
+function openDatePicker(trigger, options = {}) {
   const reopening = datePickerState && datePickerState.trigger === trigger;
   closeDatePicker();
   if (reopening) return;
@@ -5847,12 +5852,27 @@ function openDatePicker(trigger) {
       return;
     }
     const dayBtn = event.target.closest('.date-picker-day[data-date]:not([disabled])');
-    if (dayBtn) { selectDatePickerDate(dayBtn.dataset.date); return; }
+    if (dayBtn) {
+      if (datePickerState.range) handleRangeDayClick(dayBtn.dataset.date);
+      else selectDatePickerDate(dayBtn.dataset.date);
+      return;
+    }
+    if (event.target.closest('[data-action="range-all"]')) { finishRangePick(null, null); return; }
+    if (event.target.closest('[data-action="range-confirm"]')) {
+      const { start, end } = datePickerState.range;
+      if (start && end) finishRangePick(start, end);
+      return;
+    }
     if (event.target.closest('.date-picker-clear')) selectDatePickerDate('');
   });
   document.body.appendChild(popup);
 
-  datePickerState = { trigger, popup, viewYear: y, viewMonth: m - 1, selectedIso: iso, maxIso: trigger.dataset.max || null, minIso: trigger.dataset.min || null, mode: 'days' };
+  datePickerState = {
+    trigger, popup, viewYear: y, viewMonth: m - 1, selectedIso: iso,
+    maxIso: trigger.dataset.max || null, minIso: trigger.dataset.min || null, mode: 'days',
+    range: options.range ? { start: null, end: null, onPick: options.range.onPick } : null
+  };
+  if (options.range) popup.classList.add('date-picker-popup-range');
   renderDatePicker();
   positionDatePicker();
   document.addEventListener('pointerdown', onDatePickerOutsideClick, true);
@@ -8120,7 +8140,6 @@ const PERSISTENT_TRANSLATED_SELECTS = [
   newAccountType,
   expenseCategoryInput,
   expensePeriodSelect,
-  expenseExportPeriodSelect,
   settingsDecimalsSelect,
   settingsSeparatorSelect,
   settingsStakedSelect,
