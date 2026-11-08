@@ -5461,7 +5461,7 @@ async function loadChainPositions(chain, address) {
     return;
   }
   if (chain === 'solana') {
-    const data = await fetchJson(`${API_BASE}/api/solana/${address}`, 30_000);
+    const data = await fetchJson(`${API_BASE}/api/solana/${address}`, 60_000);
     cryptoSources.solana = {
       address,
       positions: data.positions.map((p) => ({ ...p, kind: p.type === 'staked' ? 'staked-sol' : 'sol-liquid' }))

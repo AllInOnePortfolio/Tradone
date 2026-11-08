@@ -1082,22 +1082,32 @@ async function getSolanaTokenInfo(mint) {
 // involving this address at all — Solana accounts are rent-exempt-funded on
 // creation, so for a wallet or token account the first signature is usually
 // also its first inbound transfer. Paginates backward in pages of 1000 (the
-// RPC max) up to a bounded number of pages so a very old, very active address
-// can't hang the request indefinitely.
-async function getSolanaFirstSignatureDate(address) {
+// RPC max) until `deadline` (a Date.now() timestamp). Each page takes 2–4s on
+// the public RPC, so an active wallet's full history can take far longer than
+// the client is willing to wait — measured live, a 4-page history alone took
+// ~13s, and the lookup used to run serially for every token and stake account,
+// pushing the whole /api/solana request past the client's timeout so the
+// wallet never connected at all. If the start of history isn't reached before
+// the deadline this returns null (cost basis unknown) rather than the oldest
+// date seen so far, which would be a confidently wrong "first received".
+// Very old signatures can carry a null blockTime, so the oldest one that has
+// a timestamp is used.
+async function getSolanaFirstSignatureDate(address, deadline) {
   try {
     let before;
-    let oldest = null;
-    for (let page = 0; page < 10; page++) {
+    let oldestTime = null;
+    while (Date.now() < deadline) {
       const params = before ? [address, { limit: 1000, before }] : [address, { limit: 1000 }];
-      const sigs = await solanaRpc('getSignaturesForAddress', params);
-      if (!sigs.length) break;
-      oldest = sigs[sigs.length - 1];
-      if (sigs.length < 1000) break;
-      before = oldest.signature;
+      const remaining = deadline - Date.now();
+      const sigs = await solanaRpc('getSignaturesForAddress', params, Math.max(1_000, Math.min(12_000, remaining)));
+      for (const s of sigs) if (s.blockTime) oldestTime = s.blockTime;
+      if (sigs.length < 1000) {
+        return oldestTime ? new Date(oldestTime * 1000).toISOString().slice(0, 10) : null;
+      }
+      before = sigs[sigs.length - 1].signature;
       await sleep(350);
     }
-    return oldest?.blockTime ? new Date(oldest.blockTime * 1000).toISOString().slice(0, 10) : null;
+    return null; // ran out of time before reaching the start of history
   } catch {
     return null;
   }
@@ -1109,6 +1119,10 @@ app.get('/api/solana/:address', marketDataLimiter, async (req, res) => {
   if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address)) {
     return res.status(400).json({ error: 'Invalid Solana address.' });
   }
+
+  // The whole request has to fit inside the client's 60s timeout, including
+  // a possible Render cold start, so first-received lookups share one budget.
+  const signatureDeadline = Date.now() + 25_000;
 
   try {
     // getStakeAccounts gets its own failure boundary — if the public RPC
@@ -1124,27 +1138,30 @@ app.get('/api/solana/:address', marketDataLimiter, async (req, res) => {
     const solPrice = priceData.solana?.usd ?? 0;
     const positions = [];
 
-    // Liquid (unstaked) SOL sitting directly in the wallet
+    // Liquid SOL, the top SPL tokens, and every delegated stake account each
+    // need a first-received lookup. They're independent, so they run in
+    // parallel under the shared deadline instead of one after another.
     const solBalance = (balanceResult?.value ?? 0) / 1e9;
     const liquidValue = solBalance * solPrice;
-    if (liquidValue >= DUST_THRESHOLD_USD) {
-      const firstDate = await getSolanaFirstSignatureDate(address);
-      const histPrice = firstDate ? await getHistoricalPrice('solana', firstDate) : null;
-      positions.push({
-        type: 'liquid',
-        symbol: 'SOL',
-        name: 'Solana',
-        mint: null,
-        coinId: 'solana',
-        balance: solBalance,
-        currentPrice: solPrice,
-        currentValue: liquidValue,
-        firstReceivedDate: firstDate,
-        priceAtFirstReceived: histPrice,
-        gainPercent: histPrice ? ((solPrice - histPrice) / histPrice) * 100 : null,
-        gainAbsolute: histPrice ? (solPrice - histPrice) * solBalance : null
-      });
-    }
+    const firstDateCache = new Map();
+    const firstDateFor = (pubkey) => {
+      if (!firstDateCache.has(pubkey)) {
+        firstDateCache.set(pubkey, getSolanaFirstSignatureDate(pubkey, signatureDeadline));
+      }
+      return firstDateCache.get(pubkey);
+    };
+    if (liquidValue >= DUST_THRESHOLD_USD) firstDateFor(address);
+
+    const delegatedStakes = stakeAccounts
+      .map((acc) => ({ acc, info: acc.account?.data?.parsed?.info }))
+      .filter(({ info }) => info?.stake?.delegation) // skip undelegated (e.g. fully withdrawn)
+      .map(({ acc, info }) => {
+        const delegation = info.stake.delegation;
+        const balance = (Number(delegation.stake) + Number(info.meta?.rentExemptReserve || 0)) / 1e9;
+        return { acc, delegation, balance, currentValue: balance * solPrice };
+      })
+      .filter((s) => s.currentValue >= DUST_THRESHOLD_USD);
+    for (const s of delegatedStakes) firstDateFor(s.acc.pubkey);
 
     // SPL tokens — RPC gives us balances but not symbol/price. Wallets that
     // have been active for a while routinely accumulate dozens to thousands
@@ -1184,14 +1201,37 @@ app.get('/api/solana/:address', marketDataLimiter, async (req, res) => {
     // token) is the genuinely expensive part — bounded to the top 5 by value,
     // same tradeoff already made for Ethereum's ERC-20 tokens above.
     const topPriced = candidates.filter(t => t.price != null).sort((a, b) => b.currentValue - a.currentValue).slice(0, 5);
-    const topPricedKeys = new Set(topPriced.map(t => t.pubkey));
+    const topPricedKeys = new Set(topPriced.filter(t => t.coinId).map(t => t.pubkey));
+    for (const pubkey of topPricedKeys) firstDateFor(pubkey);
+
+    // Liquid (unstaked) SOL sitting directly in the wallet
+    if (liquidValue >= DUST_THRESHOLD_USD) {
+      const firstDate = await firstDateFor(address);
+      const histPrice = firstDate ? await getHistoricalPrice('solana', firstDate) : null;
+      positions.push({
+        type: 'liquid',
+        symbol: 'SOL',
+        name: 'Solana',
+        mint: null,
+        coinId: 'solana',
+        balance: solBalance,
+        currentPrice: solPrice,
+        currentValue: liquidValue,
+        firstReceivedDate: firstDate,
+        priceAtFirstReceived: histPrice,
+        gainPercent: histPrice ? ((solPrice - histPrice) / histPrice) * 100 : null,
+        gainAbsolute: histPrice ? (solPrice - histPrice) * solBalance : null
+      });
+    }
 
     for (const t of candidates) {
       let firstDate = null;
       let histPrice = null;
-      if (t.coinId && topPricedKeys.has(t.pubkey)) {
-        firstDate = await getSolanaFirstSignatureDate(t.pubkey);
+      if (topPricedKeys.has(t.pubkey)) {
+        firstDate = await firstDateFor(t.pubkey);
         if (firstDate) {
+          // Spacing only matters between CoinGecko calls — sleeping for every
+          // unpriced spam token too used to add 350ms each for no request.
           await sleep(350);
           histPrice = await getHistoricalPrice(t.coinId, firstDate);
         }
@@ -1211,24 +1251,14 @@ app.get('/api/solana/:address', marketDataLimiter, async (req, res) => {
         gainPercent: histPrice && t.price ? ((t.price - histPrice) / histPrice) * 100 : null,
         gainAbsolute: histPrice && t.price ? (t.price - histPrice) * t.balance : null
       });
-      await sleep(350);
     }
 
     // Staked SOL (stake-program accounts delegated to a validator). Cost basis
     // here is the stake account's own funding date, which for SOL delegated
     // some time after it was first acquired reflects "when it was staked" more
     // than "when it was bought" — same caveat as the Kiln staked-ETH position.
-    for (const acc of stakeAccounts) {
-      const info = acc.account?.data?.parsed?.info;
-      const delegation = info?.stake?.delegation;
-      if (!delegation) continue; // undelegated stake account (e.g. fully withdrawn)
-
-      const lamports = Number(delegation.stake) + Number(info.meta?.rentExemptReserve || 0);
-      const balance = lamports / 1e9;
-      const currentValue = balance * solPrice;
-      if (currentValue < DUST_THRESHOLD_USD) continue;
-
-      const firstDate = await getSolanaFirstSignatureDate(acc.pubkey);
+    for (const { acc, delegation, balance, currentValue } of delegatedStakes) {
+      const firstDate = await firstDateFor(acc.pubkey);
       const histPrice = firstDate ? await getHistoricalPrice('solana', firstDate) : null;
 
       positions.push({
