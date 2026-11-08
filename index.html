@@ -841,7 +841,41 @@
 
           <div class="expense-io-section">
             <h2 data-i18n="expenses.ioHeading">Backup &amp; import</h2>
-            <p class="avanza-note" data-i18n="expenses.ioNote">Download every entry as a CSV file, or bring one in from elsewhere — each imported row can be linked to an account, same as adding one by hand.</p>
+            <p class="avanza-note" data-i18n="expenses.ioNote">Download your entries as a CSV file — all of them, or just a chosen period — or bring one in from elsewhere. Each imported row can be linked to an account, same as adding one by hand.</p>
+            <div class="expense-export-period">
+              <label class="expense-export-period-select">
+                <span data-i18n="expenses.exportPeriodLabel">Export period</span>
+                <select id="settings-expense-export-period">
+                  <option value="all" data-i18n="expenses.periodAll">All time</option>
+                  <option value="month" data-i18n="expenses.periodMonth">This month</option>
+                  <option value="last-month" data-i18n="expenses.periodLastMonth">Last month</option>
+                  <option value="year" data-i18n="expenses.periodYear">This year</option>
+                  <option value="custom" data-i18n="expenses.periodCustom">Custom range</option>
+                </select>
+              </label>
+              <div id="settings-expense-export-range" class="expense-custom-range" style="display:none">
+                <label>
+                  <span data-i18n="expenses.fromLabel">From</span>
+                  <button type="button" id="settings-expense-export-from-trigger" class="edit-field-date-trigger" data-date="">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2" />
+                      <path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                    <span class="edit-field-date-trigger-label">Select date</span>
+                  </button>
+                </label>
+                <label>
+                  <span data-i18n="expenses.toLabel">To</span>
+                  <button type="button" id="settings-expense-export-to-trigger" class="edit-field-date-trigger" data-date="">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2" />
+                      <path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                    <span class="edit-field-date-trigger-label">Select date</span>
+                  </button>
+                </label>
+              </div>
+            </div>
             <div class="expense-io-actions">
               <button type="button" id="settings-expense-export-btn" class="avanza-btn avanza-btn-secondary" data-i18n="expenses.exportBtn">Export as CSV</button>
               <button type="button" id="settings-expense-import-btn" class="avanza-btn avanza-btn-secondary" data-i18n="expenses.importBtn">Import from CSV</button>

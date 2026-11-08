@@ -258,7 +258,7 @@ const TRANSLATIONS = {
     'expenses.accountNote': "Linking an account deducts (or adds, for an earning) this amount from its balance and refreshes its daily return estimate.",
     'expenses.addExpenseBtn': 'Add expense',
     'expenses.ioHeading': 'Backup & import',
-    'expenses.ioNote': "Download every entry as a CSV file, or bring one in from elsewhere — each imported row can be linked to an account, same as adding one by hand.",
+    'expenses.ioNote': "Download your entries as a CSV file — all of them, or just a chosen period — or bring one in from elsewhere. Each imported row can be linked to an account, same as adding one by hand.",
     'expenses.exportBtn': 'Export as CSV',
     'expenses.importBtn': 'Import from CSV',
     'expenses.importAccountNote': "If you link an account, every imported row adjusts its balance — the same as adding each one by hand.",
@@ -280,6 +280,11 @@ const TRANSLATIONS = {
     'expenses.periodMonth': 'This month',
     'expenses.periodAll': 'All time',
     'expenses.periodCustom': 'Custom range',
+    'expenses.exportPeriodLabel': "Export period",
+    'expenses.periodLastMonth': "Last month",
+    'expenses.periodYear': "This year",
+    'expenses.exportEmpty': "No entries in the selected period.",
+    'expenses.exportRangeInvalid': "The \"From\" date is after the \"To\" date.",
     'expenses.weekTotalLabel': 'Total',
     'expenses.fromLabel': 'From',
     'expenses.toLabel': 'To',
@@ -581,7 +586,7 @@ const TRANSLATIONS = {
     'expenses.accountNote': 'Привязка счёта спишет (или начислит, для дохода) эту сумму с его баланса и обновит оценку дневного дохода.',
     'expenses.addExpenseBtn': 'Добавить расход',
     'expenses.ioHeading': 'Резервная копия и импорт',
-    'expenses.ioNote': 'Скачайте все записи в виде CSV-файла или загрузите файл откуда-то ещё — каждую импортированную строку можно привязать к счёту, как при добавлении вручную.',
+    'expenses.ioNote': "Скачайте записи в виде CSV-файла — все или только за выбранный период — или загрузите файл откуда-то ещё. Каждую импортированную строку можно привязать к счёту, как при добавлении вручную.",
     'expenses.exportBtn': 'Экспорт в CSV',
     'expenses.importBtn': 'Импорт из CSV',
     'expenses.importAccountNote': 'Если вы привяжете счёт, каждая импортированная запись изменит его баланс — так же, как при добавлении вручную.',
@@ -603,6 +608,11 @@ const TRANSLATIONS = {
     'expenses.periodMonth': 'Этот месяц',
     'expenses.periodAll': 'Всё время',
     'expenses.periodCustom': 'Свой период',
+    'expenses.exportPeriodLabel': "Период экспорта",
+    'expenses.periodLastMonth': "Прошлый месяц",
+    'expenses.periodYear': "Этот год",
+    'expenses.exportEmpty': "В выбранном периоде нет записей.",
+    'expenses.exportRangeInvalid': "Дата «С» позже даты «По».",
     'expenses.weekTotalLabel': 'Итого',
     'expenses.fromLabel': 'С',
     'expenses.toLabel': 'По',
@@ -903,7 +913,7 @@ const TRANSLATIONS = {
     'expenses.accountNote': '关联账户会从其余额中扣除（收入则增加）此金额，并刷新其每日收益估算。',
     'expenses.addExpenseBtn': '添加支出',
     'expenses.ioHeading': '备份与导入',
-    'expenses.ioNote': '将所有记录下载为 CSV 文件，或从其他地方导入 —— 每条导入的记录都可以像手动添加一样关联到一个账户。',
+    'expenses.ioNote': "将记录下载为 CSV 文件 —— 全部或仅所选期间 —— 或从其他地方导入。每条导入的记录都可以像手动添加一样关联到一个账户。",
     'expenses.exportBtn': '导出为 CSV',
     'expenses.importBtn': '从 CSV 导入',
     'expenses.importAccountNote': '如果关联账户，每条导入的记录都会像手动添加一样调整其余额。',
@@ -925,6 +935,11 @@ const TRANSLATIONS = {
     'expenses.periodMonth': '本月',
     'expenses.periodAll': '全部时间',
     'expenses.periodCustom': '自定义范围',
+    'expenses.exportPeriodLabel': "导出期间",
+    'expenses.periodLastMonth': "上个月",
+    'expenses.periodYear': "今年",
+    'expenses.exportEmpty': "所选期间内没有记录。",
+    'expenses.exportRangeInvalid': "“从”日期晚于“至”日期。",
     'expenses.weekTotalLabel': '合计',
     'expenses.fromLabel': '从',
     'expenses.toLabel': '至',
@@ -2687,13 +2702,52 @@ function expensesToCsv(entries) {
   return [header, ...rows].map((row) => row.map(escapeCsvField).join(',')).join('\r\n');
 }
 
+const expenseExportPeriodSelect = document.getElementById('settings-expense-export-period');
+const expenseExportRange        = document.getElementById('settings-expense-export-range');
+const expenseExportFromTrigger  = document.getElementById('settings-expense-export-from-trigger');
+const expenseExportToTrigger    = document.getElementById('settings-expense-export-to-trigger');
+
+// [start, end] yyyy-mm-dd bounds (inclusive) for the export's own Period
+// picker — same shape as getSelectedExpensePeriod (a null bound is open on
+// that side), but kept separate since the export period is its own choice,
+// independent of whatever the Expenses page happens to be filtered to.
+function getExpenseExportPeriod() {
+  const today = parseISODateLocal(todayLocalISODate());
+  const y = today.getFullYear();
+  const m = today.getMonth();
+  switch (expenseExportPeriodSelect.value) {
+    case 'month':      return [toISODate(new Date(y, m, 1)), toISODate(new Date(y, m + 1, 0))];
+    case 'last-month': return [toISODate(new Date(y, m - 1, 1)), toISODate(new Date(y, m, 0))];
+    case 'year':       return [toISODate(new Date(y, 0, 1)), toISODate(new Date(y, 11, 31))];
+    case 'custom':     return [expenseExportFromTrigger.dataset.date || null, expenseExportToTrigger.dataset.date || null];
+    default:           return [null, null];
+  }
+}
+
 function downloadExpensesCsv() {
-  const csv = expensesToCsv(expenses);
+  const [start, end] = getExpenseExportPeriod();
+  if (start && end && start > end) {
+    alert(t('expenses.exportRangeInvalid'));
+    return;
+  }
+  const entries = expenses
+    .filter((e) => isExpenseWithinPeriod(e.date, start, end))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (!entries.length) {
+    alert(t('expenses.exportEmpty'));
+    return;
+  }
+
+  const csv = expensesToCsv(entries);
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `tradone-expenses-${todayLocalISODate()}.csv`;
+  // An open bound falls back to the earliest entry / today, so the filename
+  // always says exactly which dates the file covers.
+  a.download = start || end
+    ? `tradone-expenses-${start || entries[0].date}_to_${end || todayLocalISODate()}.csv`
+    : `tradone-expenses-${todayLocalISODate()}.csv`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -2799,6 +2853,17 @@ function setupExpenseCsvIO() {
     ].join('');
     refreshCustomSelect(importAccountSelect);
   }
+
+  enhanceSelect(expenseExportPeriodSelect);
+  expenseExportPeriodSelect.addEventListener('change', () => {
+    expenseExportRange.style.display = expenseExportPeriodSelect.value === 'custom' ? '' : 'none';
+  });
+  // Settings had no date triggers before this, so it needs its own delegated
+  // opener — same per-page wiring as pageExpenses/pageBudget's.
+  pageSettings.addEventListener('click', (event) => {
+    const dateTrigger = event.target.closest('.edit-field-date-trigger');
+    if (dateTrigger) openDatePicker(dateTrigger);
+  });
 
   exportBtn.addEventListener('click', downloadExpensesCsv);
   importBtn.addEventListener('click', () => importFile.click());
@@ -8055,6 +8120,7 @@ const PERSISTENT_TRANSLATED_SELECTS = [
   newAccountType,
   expenseCategoryInput,
   expensePeriodSelect,
+  expenseExportPeriodSelect,
   settingsDecimalsSelect,
   settingsSeparatorSelect,
   settingsStakedSelect,

@@ -2176,6 +2176,27 @@ body.dragging-active {
   gap: 10px;
 }
 
+.expense-export-period {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+/* The custom range reuses .expense-custom-range (Expenses page), whose own
+   bottom margin would double up with the gap above the buttons here. */
+.expense-export-period .expense-custom-range {
+  margin-bottom: 0;
+  flex-wrap: wrap;
+}
+
+.expense-export-period-select {
+  display: grid;
+  gap: 6px;
+  max-width: 260px;
+  color: #e8d5d8;
+  font-size: 0.95rem;
+}
+
 .expense-import-review label {
   display: grid;
   gap: 6px;
