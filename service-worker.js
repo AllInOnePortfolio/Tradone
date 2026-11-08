@@ -4,7 +4,7 @@
 // financial/market data from the relay (see server.js) and must always hit
 // the network, never a stale cache. Bump CACHE_NAME on every shell release
 // so returning visitors pick up the new files instead of stale cached ones.
-const CACHE_NAME = 'tradone-shell-v44';
+const CACHE_NAME = 'tradone-shell-v45';
 const SHELL_FILES = [
   './',
   './index.html',
@@ -19,7 +19,12 @@ const SHELL_FILES = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_FILES))
+    // cache: 'reload' bypasses the browser's HTTP cache — GitHub Pages
+    // serves these with a 10-minute max-age, so a plain addAll right after
+    // a deploy could fill the *new* versioned cache with the *old* files.
+    caches.open(CACHE_NAME).then((cache) =>
+      cache.addAll(SHELL_FILES.map((url) => new Request(url, { cache: 'reload' })))
+    )
   );
   self.skipWaiting();
 });

@@ -881,6 +881,21 @@
       // other than localhost) still runs the app fully, just without the
       // offline app-shell cache or "Install" prompt.
       if ('serviceWorker' in navigator) {
+        // The shell is served cache-first, so a returning visitor's first
+        // load after a release still shows the old version while the new
+        // worker installs in the background. When that new worker takes
+        // over (skipWaiting + clients.claim in service-worker.js), reload
+        // once so the update actually shows up without a second manual
+        // reload. Skipped on a first-ever visit (no previous controller),
+        // where the page is already fresh from the network.
+        if (navigator.serviceWorker.controller) {
+          let reloadedForUpdate = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (reloadedForUpdate) return;
+            reloadedForUpdate = true;
+            window.location.reload();
+          });
+        }
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('service-worker.js').catch((err) => {
             console.error('Service worker registration failed:', err);
